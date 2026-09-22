@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+  <link rel="stylesheet" href="assets/fae-upgrade.css" data-fae-upgrade>
+  <link rel="stylesheet" href="assets/premium-compact-ui.css" data-premium-ui>
+  <link rel="stylesheet" href="assets/fae-motion-pro.css" data-motion-pro>
+  <script defer src="assets/fae-motion-pro.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Batch 23 Teens — Payment Collection Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --gold:#C9A227; --gold-deep:#8a6d13; --ink:#111; --mute:#555; --line:#dcdcdc;
+    --flag:#fff5e0; --flagline:#e6b800; --waive:#eef3f0; --green:#2f7d4f; --red:#b23b32; --blue:#1B2A55;
+    --sans:'DM Sans',system-ui,sans-serif; --disp:'Archivo',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#f3f3f5;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+  .sheet{max-width:920px;margin:18px auto;background:#fff;padding:28px 30px 34px;border-radius:10px;box-shadow:0 8px 40px rgba(0,0,0,.12)}
+
+  .head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:3px solid var(--gold);padding-bottom:14px;margin-bottom:6px}
+  .head .biz b{font-family:var(--disp);font-weight:900;font-size:18px;display:block;line-height:1.15}
+  .head .biz span{font-size:11px;color:var(--mute);display:block;margin-top:4px;line-height:1.5}
+  .head .biz .tag{font-family:var(--mono);font-size:9px;letter-spacing:.22em;color:var(--gold-deep);margin-top:6px}
+  .head .no{text-align:right;white-space:nowrap}
+  .head .no b{font-family:var(--disp);font-weight:900;font-size:15px;display:block}
+  .head .no span{font-size:11px;color:var(--mute)}
+
+  h1{font-family:var(--disp);font-weight:900;font-size:22px;letter-spacing:.01em;margin:16px 0 4px}
+  h1 .sub{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--gold-deep);font-weight:400;margin-top:4px}
+
+  .legend{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0 4px}
+  .legend .l{border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:#fafafa}
+  .legend .l b{font-family:var(--disp);font-weight:800;font-size:13px;display:block}
+  .legend .l .p{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--gold-deep)}
+  .legend .l small{display:block;font-size:9.5px;color:var(--mute);line-height:1.45;margin-top:3px}
+
+  .sec{margin-top:22px}
+  .sec .sh{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid var(--ink);padding-bottom:5px;margin-bottom:0}
+  .sec .sh b{font-family:var(--disp);font-weight:900;font-size:15px;letter-spacing:.02em}
+  .sec .sh .n{font-family:var(--mono);font-size:10px;color:var(--mute)}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);text-align:left;padding:8px 7px;border-bottom:1px solid var(--line)}
+  th.r,td.r{text-align:right} th.c,td.c{text-align:center}
+  td{padding:9px 7px;border-bottom:1px solid #ededed;vertical-align:top}
+  td.num{font-family:var(--mono);color:var(--mute);width:22px}
+  td.name b{font-weight:700}
+  td.name small{color:var(--mute);font-size:10px}
+  td.team{font-family:var(--mono);font-size:9.5px;font-weight:700;color:var(--blue);width:34px}
+  td.money{font-family:var(--mono);font-weight:700;white-space:nowrap}
+  .bal-due{color:var(--red)} .bal-paid{color:var(--green)}
+  td.note{font-size:10.5px;color:var(--mute);line-height:1.4}
+  tr.flag td{background:var(--flag)}
+  tr.waive td{background:var(--waive);color:var(--mute)}
+  tr.newp td{background:#eef2fb}
+  tr.pend td{background:#f6eef6}
+  .chip{font-family:var(--mono);font-size:8.5px;letter-spacing:.05em;padding:2px 6px;border-radius:4px;font-weight:700}
+  .chip.due{background:#fbe9e7;color:var(--red)} .chip.paid{background:#e7f3ec;color:var(--green)} .chip.part{background:#fff3d6;color:var(--gold-deep)} .chip.waive{background:#e7ebe8;color:var(--mute)} .chip.new{background:#e3e9f7;color:var(--blue)} .chip.pend{background:#efdcef;color:#7a2a7a}
+
+  .subtot{display:flex;justify-content:flex-end;gap:22px;padding:9px 8px;font-family:var(--mono);font-size:11px;color:var(--mute)}
+  .subtot b{color:var(--ink)}
+
+  .grand{margin-top:24px;border:2px solid var(--gold);border-radius:10px;padding:16px 20px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;background:linear-gradient(135deg,rgba(201,162,39,.08),transparent)}
+  .grand .g{min-width:130px}
+  .grand .g span{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;color:var(--gold-deep);display:block}
+  .grand .g b{font-family:var(--disp);font-weight:900;font-size:23px;display:block;margin-top:2px}
+  .grand .g small{font-size:9.5px;color:var(--mute);display:block;margin-top:2px}
+
+  .flags{margin-top:22px;border:1px solid var(--flagline);background:var(--flag);border-radius:9px;padding:14px 16px}
+  .flags b{font-family:var(--disp);font-weight:800;font-size:13px}
+  .flags ol{margin:8px 0 0;padding-left:20px;font-size:12px;line-height:1.65}
+  .flags .lead{font-size:11px;color:var(--mute);margin-top:3px}
+
+  .foot{margin-top:20px;font-family:var(--mono);font-size:9.5px;color:var(--mute);letter-spacing:.05em;line-height:1.7;border-top:1px dashed var(--line);padding-top:12px}
+
+  .toolbar{max-width:920px;margin:0 auto 0;display:flex;justify-content:flex-end;gap:10px;padding:0 8px}
+  .toolbar button{font-family:var(--sans);font-weight:700;font-size:13px;border:none;border-radius:9px;padding:11px 18px;cursor:pointer;background:var(--gold);color:#0a0800}
+  .toolbar button:active{transform:translateY(1px)}
+
+  @media print{
+    body{background:#fff}
+    .toolbar{display:none}
+    .sheet{box-shadow:none;margin:0;max-width:none;border-radius:0;padding:0}
+    .grand{background:none}
+    tr,td,th{page-break-inside:avoid}
+    .sec{page-break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="toolbar"><button onclick="window.print()">🖨 Print / Save as PDF</button></div>
+<div class="sheet">
+
+  <div class="head">
+    <div class="biz">
+      <b>F.A.E. SPORTS MANAGEMENT SERVICES</b>
+      <span>Purok 4, San Vicente, Brgy. Banaybanay, Lipa City, Batangas<br>0917 501 8835 · filamelitebasketball@gmail.com</span>
+      <div class="tag">EARNED NOT GIVEN</div>
+    </div>
+    <div class="no">
+      <b>BATCH 23 · TEENS</b>
+      <span>42 players · as of 18 Sep 2026</span>
+    </div>
+  </div>
+
+  <h1>Payment Collection Sheet — Final Roster<span class="sub">4 TEAMS · NEW · RE-ENROLLED · SCHOLARS · TOURNAMENT JOINERS</span></h1>
+
+  <div class="legend">
+    <div class="l"><b>New Player</b><div class="p">₱10,600</div><small>Training 5,500 · Batch Unif. 1,000 · Tourn. Unif. 1,600 · Tourn. 2,500</small></div>
+    <div class="l"><b>Re-enrolled</b><div class="p">₱8,000</div><small>Training 5,500 · Tournament 2,500</small></div>
+    <div class="l"><b>Scholar</b><div class="p">₱2,500</div><small>Tournament fee only</small></div>
+    <div class="l"><b>Joiner</b><div class="p">₱2,500</div><small>Tournament joiner rate</small></div>
+  </div>
+
+  <!-- ============ NEW PLAYERS ============ -->
+  <div class="sec">
+    <div class="sh"><b>New Players</b><span class="n">fee ₱10,600 · 8 players</span></div>
+    <table>
+      <thead><tr><th>#</th><th>Player</th><th class="c">Team</th><th class="r">Fee</th><th class="r">Paid</th><th class="r">Balance</th><th>Status / Note</th></tr></thead>
+      <tbody>
+        <tr><td class="num">1</td><td class="name"><b>Braden Candelaria</b></td><td class="team c">T1</td><td class="r money">11,600</td><td class="r money">11,600</td><td class="r money bal-paid">0</td><td class="note"><span class="chip paid">FULLY PAID</span> incl. extra uniform +1,000</td></tr>
+        <tr><td class="num">2</td><td class="name"><b>Cj Goldwyn Dalangin Tejada</b></td><td class="team c">T3</td><td class="r money">10,600</td><td class="r money">5,500</td><td class="r money bal-due">5,100</td><td class="note"><span class="chip due">BALANCE</span> paid 3,000 + 2,500</td></tr>
+        <tr class="flag"><td class="num">3</td><td class="name"><b>Pio Jaime Emmanuel L. Dimaala</b></td><td class="team c">T3</td><td class="r money">10,600</td><td class="r money">10,100</td><td class="r money bal-due">500</td><td class="note"><span class="chip part">CHECK</span> paid 5,000 + 5,100 = 10,100, balance 500? ⚑</td></tr>
+        <tr class="flag"><td class="num">4</td><td class="name"><b>Steven Mark N. Leonidas</b></td><td class="team c">T3</td><td class="r money">7,300</td><td class="r money">7,300</td><td class="r money bal-paid">0</td><td class="note"><span class="chip part">CHECK</span> 9-session rate ₱7,300 — paid in full? ⚑</td></tr>
+        <tr class="flag"><td class="num">5</td><td class="name"><b>Alwin Stanley Mercado</b></td><td class="team c">T2</td><td class="r money">—</td><td class="r money">9,600</td><td class="r money">—</td><td class="note"><span class="chip part">CHECK</span> 8-session rate — fee? paid 5,500 + 4,100 = 9,600 ⚑</td></tr>
+        <tr class="flag"><td class="num">6</td><td class="name"><b>Rodrigo Martizano</b></td><td class="team c">T4</td><td class="r money">10,600</td><td class="r money">4,050</td><td class="r money bal-due">6,550</td><td class="note"><span class="chip part">CHECK</span> notes 3,100 / 4,050 / 6,550 — paid vs balance? ⚑</td></tr>
+        <tr><td class="num">7</td><td class="name"><b>Brian Gan Degen</b></td><td class="team c">T3</td><td class="r money">10,600</td><td class="r money">4,050</td><td class="r money bal-due">6,550</td><td class="note"><span class="chip due">BALANCE</span></td></tr>
+        <tr class="newp"><td class="num">8</td><td class="name"><b>King Ornopia</b></td><td class="team c">T1</td><td class="r money">10,600</td><td class="r money">0</td><td class="r money bal-due">10,600</td><td class="note"><span class="chip new">NEW · UNPAID</span></td></tr>
+      </tbody>
+    </table>
+    <div class="subtot">Collected <b>₱52,200</b> · Outstanding <b>₱29,300</b> <span>(excl. Mercado fee TBC)</span></div>
+  </div>
+
+  <!-- ============ RE-ENROLLED ============ -->
+  <div class="sec">
+    <div class="sh"><b>Re-enrolled</b><span class="n">fee ₱8,000 · 9 players</span></div>
+    <table>
+      <thead><tr><th>#</th><th>Player</th><th class="c">Team</th><th class="r">Fee</th><th class="r">Paid</th><th class="r">Balance</th><th>Status / Note</th></tr></thead>
+      <tbody>
+        <tr><td class="num">1</td><td class="name"><b>Cody Arceo</b></td><td class="team c">T2</td><td class="r money">8,000</td><td class="r money">4,000</td><td class="r money bal-due">4,000</td><td class="note"><span class="chip due">BALANCE</span></td></tr>
+        <tr><td class="num">2</td><td class="name"><b>Karl Andres T. Apuntar</b></td><td class="team c">T1</td><td class="r money">8,000</td><td class="r money">0</td><td class="r money bal-due">8,000</td><td class="note"><span class="chip due">UNPAID</span></td></tr>
+        <tr><td class="num">3</td><td class="name"><b>Lee Daniel Mampusti</b></td><td class="team c">T4</td><td class="r money">8,000</td><td class="r money">8,000</td><td class="r money bal-paid">0</td><td class="note"><span class="chip paid">FULLY PAID</span></td></tr>
+        <tr><td class="num">4</td><td class="name"><b>Cyrus Hebron Balido</b></td><td class="team c">T4</td><td class="r money">8,000</td><td class="r money">5,500</td><td class="r money bal-due">2,500</td><td class="note"><span class="chip due">BALANCE</span> tournament fee due</td></tr>
+        <tr><td class="num">5</td><td class="name"><b>Gabriel Angelo Aguila</b></td><td class="team c">T3</td><td class="r money">8,000</td><td class="r money">5,500</td><td class="r money bal-due">2,500</td><td class="note"><span class="chip due">BALANCE</span> tournament fee due</td></tr>
+        <tr><td class="num">6</td><td class="name"><b>Ron Ishan Manila</b></td><td class="team c">T4</td><td class="r money">8,000</td><td class="r money">8,000</td><td class="r money bal-paid">0</td><td class="note"><span class="chip paid">FULLY PAID</span></td></tr>
+        <tr><td class="num">7</td><td class="name"><b>Xaj Oliver Valencia</b></td><td class="team c">T2</td><td class="r money">8,000</td><td class="r money">8,000</td><td class="r money bal-paid">0</td><td class="note"><span class="chip paid">FULLY PAID</span></td></tr>
+        <tr><td class="num">8</td><td class="name"><b>Jaerod Alfonso Mendoza</b></td><td class="team c">T2</td><td class="r money">8,000</td><td class="r money">5,500</td><td class="r money bal-due">2,500</td><td class="note"><span class="chip due">BALANCE</span> tournament fee due</td></tr>
+        <tr><td class="num">9</td><td class="name"><b>Daniel John Ting</b></td><td class="team c">T3</td><td class="r money">8,000</td><td class="r money">8,000</td><td class="r money bal-paid">0</td><td class="note"><span class="chip paid">FULLY PAID</span></td></tr>
+      </tbody>
+    </table>
+    <div class="subtot">Collected <b>₱52,500</b> · Outstanding <b>₱19,500</b></div>
+  </div>
+
+  <!-- ============ SCHOLARS ============ -->
+  <div class="sec">
+    <div class="sh"><b>Scholars</b><span class="n">tournament fee ₱2,500 · 3 waived · 17 players</span></div>
+    <table>
+      <thead><tr><th>#</th><th>Player</th><th class="c">Team</th><th class="r">Fee</th><th class="r">Paid</th><th class="r">Balance</th><th>Status / Note</th></tr></thead>
+      <tbody>
+        <tr class="waive"><td class="num">1</td><td class="name"><b>Krain Sañez</b></td><td class="team c">T1</td><td class="r money">0</td><td class="r money">0</td><td class="r money">0</td><td class="note"><span class="chip waive">WAIVED</span></td></tr>
+        <tr class="waive"><td class="num">2</td><td class="name"><b>Kurk Sañez</b></td><td class="team c">T4</td><td class="r money">0</td><td class="r money">0</td><td class="r money">0</td><td class="note"><span class="chip waive">WAIVED</span></td></tr>
+        <tr class="waive"><td class="num">3</td><td class="name"><b>Yeoj dela Cruz</b></td><td class="team c">T2</td><td class="r money">0</td><td class="r money">0</td><td class="r money">0</td><td class="note"><span class="chip waive">WAIVED</span></td></tr>
+        <tr><td class="num">4</td><td class="name"><b>Alejandro Johann R. Teves</b></td><td class="team c">T1</td><td class="r money">2,500</td><td class="r money">2,500</td><td class="r money bal-paid">0</td><td class="note"><span class="chip paid">PAID</span></td></tr>
+        <tr class="flag"><td class="num">5</td><td class="name"><b>Kurt Maranan</b></td><td class="team c">T3</td><td class="r money">3,500</td><td class="r money">1,000</td><td class="r money bal-due">2,500</td><td class="note"><span class="chip part">CHECK</span> paid 1,000 (uniform); tournament 2,500 due ⚑</td></tr>
+        <tr class="flag"><td class="num">6</td><td class="name"><b>Kurt Matthew M. Llave</b> <small>(14U)</small></td><td class="team c">T3</td><td class="r money">2,900</td><td class="r money">0</td><td class="r money bal-due">2,900</td><td class="note"><span class="chip part">CHECK</span> 14U rate 2,500 + 400 — paid or due? ⚑</td></tr>
+        <tr><td class="num">7</td><td class="name"><b>Miguel Maranan</b></td><td class="team c">T2</td><td class="r money">2,500</td><td class="r money">0</td><td class="r money bal-due">2,500</td><td class="note"><span class="chip due">UNPAID</span></td></tr>
+        <tr><td class="num">8</td><td class="name"><b>Jhet Dalangin</b></td><td class="team c">T2</td><td class="r money">2,500</td><td class="r money">0</td><td class="r money bal-due">2,500</td><td class="note"><span class="chip due">UNPAID</span></td></tr>
+        <tr><td class="num">9</td><td class="name"><b>Asher Nathanael Bisa</b></td><td class="team c">T4</td><td class="r money">2,500</td><td class="r money">0</td><td class="r money bal-due">2,500</td><td class="note"><span class="chip due">UNPAID</span></td></tr>
+        <tr><td class="num">10</td><td class="name"><b>Clint Castillo</b></td><td class="team c">T1</td><td class="r money">2,500</td><td class="r money">0</td><td class="r money bal-due">2,500</td><td class="note"><span class="chip due">UNPAID</span></td></tr>
+        <tr><td class="num">11</td><td class="name"><b>Shem Kylie A. Bacquian</b></td><td class="team c">T3</td><td class="r money">2,500</td><td class="r money">0</td><td class="r money bal-due">2,500</td><td class="note"><span class="chip due">UNPAID</span></td></tr>
+        <tr><td class="num">12</td><td class="name"><b>Julian Sedric L. Garcia</b></td><td class="team c">T2</td><td class="r money">2,500</td><td class="r money">0</td><td class="r money bal-due">2,500</td><td class="note"><span class="chip due">UNPAID</span></td></tr>
+        <tr><td class="num">13</td><td class="name"><b>Kean Yael Guevarra</b></td><td class="team c">T4</td><td class="r money">2,500</td><td class="r money">0</td><td class="r money bal-due">2,500</td><td class="note"><span class="chip due">UNPAID</span></td></tr>
+        <tr><td class="num">14</td><td class="name"><b>Xian Peter Resurreccion</b></td><td class="team c">T1</td><td class="r money">2,500</td><td class="r money">0</td><td class="r money bal-due">2,500</td><td class="note"><span class="chip due">UNPAID</span></td></tr>
+        <tr><td class="num">15</td><td class="name"><b>Deejay Ramos</b></td><td class="team c">T4</td><td class="r money">2,500</td><td class="r money">0</td><td class="r money bal-due">2,500</td><td class="note"><span class="chip due">UNPAID</span></td></tr>
+        <tr><td class="num">16</td><td class="name"><b>Lance Andrei T. Garcia</b></td><td class="team c">T4</td><td class="r money">2,500</td><td class="r money">0</td><td class="r money bal-due">2,500</td><td class="note"><span class="chip due">UNPAID</span></td></tr>
+        <tr><td class="num">17</td><td class="name"><b>Adrain Tyler Recinto</b></td><td class="team c">T4</td><td class="r money">2,500</td><td class="r money">0</td><td class="r money bal-due">2,500</td><td class="note"><span class="chip due">UNPAID</span></td></tr>
+      </tbody>
+    </table>
+    <div class="subtot">Collected <b>₱3,500</b> · Outstanding <b>₱32,900</b></div>
+  </div>
+
+  <!-- ============ JOINERS ============ -->
+  <div class="sec">
+    <div class="sh"><b>Tournament Joiners</b><span class="n">rate ₱2,500 · 5 joiners</span></div>
+    <table>
+      <thead><tr><th>#</th><th>Player</th><th class="c">Team</th><th class="r">Fee</th><th class="r">Paid</th><th class="r">Balance</th><th>Status / Note</th></tr></thead>
+      <tbody>
+        <tr><td class="num">1</td><td class="name"><b>Joaquin Abanto</b></td><td class="team c">T1</td><td class="r money">2,500</td><td class="r money">0</td><td class="r money bal-due">2,500</td><td class="note"><span class="chip due">UNPAID</span></td></tr>
+        <tr><td class="num">2</td><td class="name"><b>Enzo Denaga</b></td><td class="team c">T1</td><td class="r money">2,500</td><td class="r money">0</td><td class="r money bal-due">2,500</td><td class="note"><span class="chip due">UNPAID</span></td></tr>
+        <tr><td class="num">3</td><td class="name"><b>Nash Mercado</b></td><td class="team c">T2</td><td class="r money">2,500</td><td class="r money">0</td><td class="r money bal-due">2,500</td><td class="note"><span class="chip due">UNPAID</span></td></tr>
+        <tr><td class="num">4</td><td class="name"><b>Xander Balita</b></td><td class="team c">T1</td><td class="r money">2,500</td><td class="r money">0</td><td class="r money bal-due">2,500</td><td class="note"><span class="chip due">UNPAID</span></td></tr>
+        <tr><td class="num">5</td><td class="name"><b>Deiron Limbag</b></td><td class="team c">T1</td><td class="r money">2,500</td><td class="r money">0</td><td class="r money bal-due">2,500</td><td class="note"><span class="chip due">UNPAID</span></td></tr>
+      </tbody>
+    </table>
+    <div class="subtot">Collected <b>₱0</b> · Outstanding <b>₱12,500</b></div>
+  </div>
+
+  <!-- ============ TO RECONCILE ============ -->
+  <div class="sec">
+    <div class="sh"><b>To Reconcile</b><span class="n">on a team, no payment record yet · 3 players</span></div>
+    <table>
+      <thead><tr><th>#</th><th>Player</th><th class="c">Team</th><th class="r">Fee</th><th class="r">Paid</th><th class="r">Balance</th><th>Status / Note</th></tr></thead>
+      <tbody>
+        <tr class="pend"><td class="num">1</td><td class="name"><b>Gab Sebastian Malaluan</b></td><td class="team c">T2</td><td class="r money">?</td><td class="r money">?</td><td class="r money">?</td><td class="note"><span class="chip pend">NO RECORD</span> category + payment needed</td></tr>
+        <tr class="pend"><td class="num">2</td><td class="name"><b>Kim A. Adante</b></td><td class="team c">T3</td><td class="r money">?</td><td class="r money">?</td><td class="r money">?</td><td class="note"><span class="chip pend">NO RECORD</span> category + payment needed</td></tr>
+        <tr class="pend"><td class="num">3</td><td class="name"><b>Marcus Pagcaliuangan</b></td><td class="team c">T4</td><td class="r money">?</td><td class="r money">?</td><td class="r money">?</td><td class="note"><span class="chip pend">NO RECORD</span> category + payment needed</td></tr>
+      </tbody>
+    </table>
+    <div class="subtot" style="justify-content:flex-start">⚑ Two paid-in-full records — <b>₱10,700</b> ("Dex Ter") and <b>₱11,600</b> ("Lala Kalaw") — likely belong to two of these three. Confirm and I'll attach them.</div>
+  </div>
+
+  <!-- ============ GRAND TOTAL ============ -->
+  <div class="grand">
+    <div class="g"><span>CASH RECEIVED</span><b style="color:var(--green)">₱130,500</b><small>₱108,200 attached + ₱22,300 to reconcile</small></div>
+    <div class="g"><span>OUTSTANDING</span><b style="color:var(--red)">₱94,200</b><small>excl. Mercado fee (TBC)</small></div>
+    <div class="g"><span>HEADS · TEENS</span><b>42</b><small>39 recorded + 3 pending</small></div>
+  </div>
+
+  <!-- ============ NOTES ============ -->
+  <div class="flags">
+    <b>⚑ Open items to finalize</b>
+    <div class="lead" style="margin-bottom:6px"><b>Reconcile 3 players:</b> Gab Sebastian Malaluan, Kim A. Adante, Marcus Pagcaliuangan have no payment record. The two orphan payments — ₱10,700 ("Dex Ter") and ₱11,600 ("Lala Kalaw") — are almost certainly two of them under nicknames. Tell me which, and the third player's fee category.</div>
+    <div class="lead"><b>Confirm amounts (best-read shown):</b></div>
+    <ol>
+      <li><b>Pio Jaime Emmanuel L. Dimaala</b> — paid ₱10,100, balance ₱500?</li>
+      <li><b>Steven Mark N. Leonidas</b> — 9-session ₱7,300 paid in full?</li>
+      <li><b>Alwin Stanley Mercado</b> — 8-session fee = ? (paid ₱9,600)</li>
+      <li><b>Rodrigo Martizano</b> — 3,100 / 4,050 / 6,550: which is paid, which is balance?</li>
+      <li><b>Kurt Maranan</b> — tournament ₱2,500 still due on top of the ₱1,000 uniform?</li>
+      <li><b>Kurt Matthew M. Llave (14U)</b> — ₱2,900 paid or due?</li>
+    </ol>
+  </div>
+
+  <div class="foot">
+    F.A.E. Sports Management Services · Batch 23 Teens · Final Roster (42) · 18 Sep 2026<br>
+    Team column: T1–T4 per tournament assignment. For the shared record, mirror paid/unpaid status on the Google Sheet / live site.
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,28 @@
+# Roadmap
+
+- [x] Replace the FAE HUB gold styling and long copy with black, silver, and concise brand language.
+- [x] Build a responsive GSAP site wheel with drag, controls, auto-rotation, and reduced-motion behavior.
+- [x] Place all four requested site identities and matching slogan artwork.
+- [x] Add the extensible four-logo Sponsors marquee.
+- [x] Verify desktop/mobile rendering, links, metadata, and diagnostics.
+- [x] Normalize and enlarge all wheel logos and slogan graphics without cropping or distortion.
+- [x] Replace the sponsor marquee with a static, centered sponsor grid.
+- [x] Polish wheel auto-rotation pauses, controls, and section reveals.
+- [x] Add the sponsor benefits and saved sponsorship inquiry form.
+- [x] Replace the basketball card logo with the new transparent upload.
+- [x] Add the cinematic Our Court section with the supplied photos.
+- [x] Add the layered black-and-silver scrolling background and cinematic hero.
+- [x] Make sponsors borderless and remove Apex Performance.
+- [x] Add the once-per-session FAE intro and subtle interactive cursor.
+- [x] Add smooth scrolling, pinned cross-fades, magnetic buttons, card sheen, and count-up stats.
+- [x] Add the editable Next Game / Court Status card.
+- [x] Complete launch metadata, social image, favicon, lazy loading, and installable offline PWA.
+- [x] Verify desktop, mobile, reduced motion, offline behavior, and diagnostics.
+- [x] Remove the NBA legends photo and replace the court presentation with a resilient interactive 3D prototype.
+- [x] Upgrade status and site cards with glass HUD frames and silver corner details.
+- [x] Replace wheel buttons with a keyboard-accessible segmented progress ring.
+- [x] Extend the premium parallax background through the footer.
+- [x] Verify the 3D court, fallback, reduced motion, keyboard flow, mobile layout, and PWA build.
+- [x] Replace the interactive court with a still 3D render and scroll-only reveal.
+- [x] Add a dark black-and-gold basketball arena background across the full page.
+- [x] Verify desktop, mobile, reduced motion, and build health.

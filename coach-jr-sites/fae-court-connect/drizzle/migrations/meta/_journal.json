@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1789753928987,
+      "tag": "0000_create_cafe_station_booking_system",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789754272388,
+      "tag": "0001_fix_public_cafe_station_policy",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789813810950,
+      "tag": "0002_enforce_court_member_price_gap",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789814895242,
+      "tag": "0003_prevent_overlapping_court_bookings",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789834480422,
+      "tag": "0004_slot_state_system",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789834974132,
+      "tag": "0005_booking_email_notifications",
+      "breakpoints": true
+    }
+  ]
+}

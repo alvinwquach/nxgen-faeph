@@ -1,0 +1,337 @@
+/* FAE PREMIUM COMPACT UI v4.0 - Industry-Leading Dashboard Design
+   Based on: shadcn/ui, Vercel Design, Stripe Dashboard patterns */
+
+:root {
+  /* Ultra-Premium Color System */
+  --bg-app: #000000;
+  --bg-primary: #0A0A0A;
+  --bg-secondary: #111111;
+  --bg-tertiary: #171717;
+  --bg-hover: #1A1A1A;
+  
+  /* Sophisticated Borders */
+  --border-primary: #262626;
+  --border-secondary: #333333;
+  --border-hover: #404040;
+  
+  /* Refined Text */
+  --text-primary: #FAFAFA;
+  --text-secondary: #A1A1A1;
+  --text-tertiary: #737373;
+  
+  /* Premium Gold */
+  --accent-gold: #C9A227;
+  --accent-gold-hover: #E8C766;
+  --accent-gold-subtle: rgba(201, 162, 39, 0.1);
+  
+  /* Semantic Colors */
+  --success: #16A34A;
+  --success-bg: rgba(22, 163, 74, 0.1);
+  --error: #DC2626;
+  --error-bg: rgba(220, 38, 38, 0.1);
+  --warning: #F59E0B;
+  --warning-bg: rgba(245, 158, 11, 0.1);
+  
+  /* Compact Spacing - 4px base */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  
+  /* Refined Radius */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  
+  /* Subtle Shadows */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+  
+  /* Smooth Transitions */
+  --transition-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Typography */
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 13px;
+  --text-md: 14px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  --text-2xl: 24px;
+  --text-3xl: 30px;
+}
+
+/* Compact KPI Card - Stripe-Inspired */
+.kpi-compact {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  transition: all var(--transition-base);
+}
+
+.kpi-compact:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-secondary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.kpi-compact-label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3);
+}
+
+.kpi-compact-value {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  font-family: 'Archivo', sans-serif;
+  color: var(--text-primary);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-2);
+}
+
+.kpi-compact-trend {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-tertiary);
+}
+
+.kpi-compact-trend.up { color: var(--success); }
+
+/* Premium Data Table - Vercel-Inspired */
+.table-premium {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--text-sm);
+}
+
+.table-premium th {
+  text-align: left;
+  font-weight: 600;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.table-premium td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--border-primary);
+  color: var(--text-secondary);
+  transition: background-color var(--transition-fast);
+}
+
+.table-premium tbody tr:hover td {
+  background: var(--bg-secondary);
+}
+
+/* Compact Stats Grid - shadcn-Inspired */
+.stats-compact {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-3);
+}
+
+.stat-compact {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  transition: all var(--transition-fast);
+}
+
+.stat-compact:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-secondary);
+}
+
+.stat-compact-label {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-1);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-compact-value {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  font-family: 'Archivo', sans-serif;
+  color: var(--text-primary);
+}
+
+/* Premium Card System */
+.card-premium {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.card-premium-header {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.card-premium-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.card-premium-content {
+  padding: var(--space-5);
+}
+
+/* Compact Button System */
+.btn-premium {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  padding: 0 var(--space-4);
+  height: 32px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-family: inherit;
+}
+
+.btn-premium-primary {
+  background: var(--accent-gold);
+  color: #000;
+  font-weight: 600;
+}
+
+.btn-premium-primary:hover {
+  background: var(--accent-gold-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-premium-secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-color: var(--border-secondary);
+}
+
+.btn-premium-secondary:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+}
+
+/* Badge System */
+.badge-premium {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.badge-premium-success {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.badge-premium-error {
+  background: var(--error-bg);
+  color: var(--error);
+}
+
+.badge-premium-warning {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+/* Premium List Item - Stripe Style */
+.list-item-premium {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-primary);
+  transition: background-color var(--transition-fast);
+  cursor: pointer;
+}
+
+.list-item-premium:hover {
+  background: var(--bg-tertiary);
+}
+
+.list-item-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  font-size: var(--text-md);
+  flex-shrink: 0;
+}
+
+.list-item-title {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.list-item-subtitle {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+/* Compact Input */
+.input-premium {
+  width: 100%;
+  height: 36px;
+  padding: 0 var(--space-3);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  transition: all var(--transition-fast);
+}
+
+.input-premium:focus {
+  outline: none;
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 3px var(--accent-gold-subtle);
+}
+
+/* Utilities */
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.font-mono { font-family: 'JetBrains Mono', monospace; }
+
+/* Responsive */
+@media (max-width: 640px) {
+  .stats-compact {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .kpi-compact-value {
+    font-size: var(--text-2xl);
+  }
+}
+

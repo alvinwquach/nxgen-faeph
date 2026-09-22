@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "marquee",
+        "value": "*",
+        "files": [
+          "public/nxgen-upgrade-preview.html"
+        ],
+        "createdAt": "2026-09-18T10:23:18.849Z",
+        "reason": "decorative slow sunburst rotation (brand motif), not an auto-scrolling content marquee"
+      }
+    ]
+  }
+}

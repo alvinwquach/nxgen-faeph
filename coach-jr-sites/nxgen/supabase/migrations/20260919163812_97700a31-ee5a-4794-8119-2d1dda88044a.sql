@@ -1,0 +1,1 @@
+CREATE POLICY players_staff_read ON public.players FOR SELECT TO authenticated USING (public.is_staff(auth.uid()));

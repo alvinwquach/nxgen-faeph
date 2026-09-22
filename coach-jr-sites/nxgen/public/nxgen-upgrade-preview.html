@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NXGEN Premier League — Launch Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#C9A227;--gold-l:#E8C468;--void:#08080b;--ink:#F0F2F5;--muted:#8F94A4;--line:rgba(201,162,39,.18)}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--void);color:var(--ink);font-family:'DM Sans',sans-serif;overflow-x:hidden}
+.wrap{max-width:1040px;margin:0 auto;padding:0 22px}
+.eyebrow{font-size:12px;letter-spacing:.34em;text-transform:uppercase;color:var(--gold)}
+h2.t{font-family:'Archivo';font-weight:900;font-size:clamp(26px,4.4vw,40px);letter-spacing:.02em;margin:10px 0 26px}
+.reveal{opacity:0;transform:translateY(38px);transition:.85s cubic-bezier(.16,.84,.3,1)}
+.reveal.in{opacity:1;transform:none}
+nav{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;
+ padding:16px 22px;background:rgba(8,8,11,.72);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.brand{font-family:'Archivo';font-weight:900;letter-spacing:.22em;font-size:18px}
+.nav-cta{font:800 12px 'Archivo';letter-spacing:.12em;text-transform:uppercase;color:#000;background:var(--gold);
+ border:none;padding:10px 18px;border-radius:99px;cursor:pointer}
+.hero{min-height:82vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+ position:relative;overflow:hidden;background:radial-gradient(ellipse 60% 55% at 50% 42%,#17130a,#0a0a0d 60%,#000)}
+.hero .glow{position:absolute;width:64vmin;height:64vmin;border-radius:50%;pointer-events:none;
+ background:radial-gradient(circle,rgba(201,162,39,.20),transparent 65%);filter:blur(34px);
+ left:var(--mx,50%);top:var(--my,42%);transform:translate(-50%,-50%);transition:.18s}
+.sun{position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);width:74vmin;height:74vmin;opacity:.16;
+ animation:spin 60s linear infinite}
+@keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+.hero h1{font-family:'Archivo';font-weight:900;font-size:clamp(46px,11vw,120px);letter-spacing:.04em;line-height:.95;
+ animation:rise 1s cubic-bezier(.16,.84,.3,1) both}
+.hero .sub{margin-top:16px;font-size:clamp(13px,2.4vw,17px);letter-spacing:.3em;text-transform:uppercase;color:var(--gold);
+ animation:rise 1s .15s cubic-bezier(.16,.84,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(46px)}to{opacity:1;transform:none}}
+.mag{margin-top:36px;font:800 14px 'Archivo';letter-spacing:.14em;text-transform:uppercase;color:#000;background:var(--gold);
+ border:none;padding:17px 42px;border-radius:99px;cursor:pointer;transition:transform .15s ease-out,box-shadow .2s;
+ box-shadow:0 8px 30px rgba(201,162,39,.25);animation:rise 1s .3s cubic-bezier(.16,.84,.3,1) both}
+.mag:hover{box-shadow:0 10px 40px rgba(201,162,39,.45)}
+section{padding:74px 0;border-top:1px solid var(--line)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:18px}
+.card{position:relative;padding:30px 24px;border:1px solid var(--line);border-radius:18px;background:rgba(16,16,20,.6);
+ transform-style:preserve-3d;transition:transform .12s ease-out,border-color .3s;overflow:hidden;will-change:transform}
+.card:hover{border-color:rgba(201,162,39,.55)}
+.card .num{font-family:'Archivo';font-weight:900;font-size:14px;color:var(--gold);letter-spacing:.1em}
+.card h3{font-family:'Archivo';font-weight:900;font-size:23px;margin:10px 0 6px}
+.card p{color:var(--muted);font-size:14px;line-height:1.5}
+.card .shine{position:absolute;inset:0;background:linear-gradient(105deg,transparent 42%,rgba(232,196,104,.28) 50%,transparent 58%);
+ transform:translateX(-130%);transition:transform .55s}
+.card:hover .shine{transform:translateX(130%)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:26px}
+.stile{background:rgba(16,16,20,.6);border:1px solid var(--line);border-radius:16px;padding:22px}
+.stile .k{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.stile .v{font-family:'Archivo';font-weight:900;font-size:clamp(34px,6vw,52px);color:var(--gold-l);line-height:1.05;margin-top:8px}
+.stile .d{font-size:12px;color:#6fcf97;margin-top:6px}
+.chartbox{background:rgba(16,16,20,.6);border:1px solid var(--line);border-radius:18px;padding:24px}
+.chartbox .k{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+svg .grid-l{stroke:rgba(255,255,255,.06)}
+svg .area{fill:url(#g)}
+svg .ln{fill:none;stroke:var(--gold);stroke-width:2.5;stroke-linecap:round;
+ stroke-dasharray:1000;stroke-dashoffset:1000;transition:stroke-dashoffset 1.8s ease-out}
+svg .ln.draw{stroke-dashoffset:0}
+svg .dot{fill:var(--gold-l)}
+.otpwrap{display:flex;justify-content:center}
+.glass{width:100%;max-width:440px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);
+ border-radius:26px;padding:34px 30px;backdrop-filter:blur(16px);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.glass .ic{width:48px;height:48px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;
+ border-radius:14px;background:rgba(201,162,39,.12);border:1px solid rgba(201,162,39,.3);color:var(--gold-l);font-size:22px}
+.glass h3{font-family:'Archivo';font-weight:900;font-size:24px;text-align:center}
+.glass h3 span{color:var(--gold)}
+.glass .hint{text-align:center;font-size:12px;color:var(--muted);margin-top:6px}
+.otp{display:flex;gap:10px;justify-content:center;margin:26px 0 14px;flex-wrap:wrap}
+.otp input{width:48px;height:56px;border-radius:14px;border:1px solid rgba(201,162,39,.3);background:rgba(0,0,0,.4);
+ color:#fff;text-align:center;font:800 22px 'Archivo';outline:none;backdrop-filter:blur(6px);transition:.2s;
+ opacity:0;transform:scale(.8);animation:pop .35s forwards}
+@keyframes pop{to{opacity:1;transform:scale(1)}}
+.otp input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,162,39,.2)}
+.resend{text-align:center;font-size:12px;color:var(--muted)}
+.resend b{color:var(--gold);cursor:pointer}
+.verify{width:100%;margin-top:20px;padding:14px;border:none;border-radius:14px;background:var(--gold);color:#000;
+ font:800 15px 'Archivo';letter-spacing:.08em;cursor:pointer;transition:.2s}
+.verify:disabled{opacity:.45;cursor:not-allowed}
+footer{padding:40px 22px;text-align:center;color:var(--muted);font-size:12px;letter-spacing:.1em;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand">NXGEN</div>
+  <button class="nav-cta">Register</button>
+</nav>
+
+<header class="hero" id="hero">
+  <div class="glow" id="glow"></div>
+  <svg class="sun" viewBox="-100 -100 200 200" aria-hidden="true"><g fill="#C9A227">
+    <polygon points="0,-30 7,-90 0,-100 -7,-90"/><polygon points="0,-30 7,-90 0,-100 -7,-90" transform="rotate(45)"/>
+    <polygon points="0,-30 7,-90 0,-100 -7,-90" transform="rotate(90)"/><polygon points="0,-30 7,-90 0,-100 -7,-90" transform="rotate(135)"/>
+    <polygon points="0,-30 7,-90 0,-100 -7,-90" transform="rotate(180)"/><polygon points="0,-30 7,-90 0,-100 -7,-90" transform="rotate(225)"/>
+    <polygon points="0,-30 7,-90 0,-100 -7,-90" transform="rotate(270)"/><polygon points="0,-30 7,-90 0,-100 -7,-90" transform="rotate(315)"/>
+  </g></svg>
+  <h1>NXGEN</h1>
+  <div class="sub">Premier League · Lipa City · Batangas</div>
+  <button class="mag" id="mag">Register your team</button>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="eyebrow reveal">The Divisions</div>
+    <h2 class="t reveal">Four ways to compete</h2>
+    <div class="grid">
+      <div class="card reveal"><div class="shine"></div><div class="num">01</div><h3>Rising Stars</h3><p>Youth development ladder for the next generation.</p></div>
+      <div class="card reveal" style="transition-delay:.08s"><div class="shine"></div><div class="num">02</div><h3>Legacy</h3><p>Open competitive tier for seasoned ballers.</p></div>
+      <div class="card reveal" style="transition-delay:.16s"><div class="shine"></div><div class="num">03</div><h3>3x3</h3><p>Half-court, full speed, pure hustle.</p></div>
+      <div class="card reveal" style="transition-delay:.24s"><div class="shine"></div><div class="num">04</div><h3>King of the Court</h3><p>Winner stays on. Prove you belong.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="eyebrow reveal">This Season</div>
+    <h2 class="t reveal">The league by the numbers</h2>
+    <div class="stats">
+      <div class="stile reveal"><div class="k">Players</div><div class="v" data-to="248">0</div><div class="d">+18% vs last season</div></div>
+      <div class="stile reveal" style="transition-delay:.08s"><div class="k">Teams</div><div class="v" data-to="32">0</div><div class="d">+6 new</div></div>
+      <div class="stile reveal" style="transition-delay:.16s"><div class="k">Games played</div><div class="v" data-to="146">0</div><div class="d">across 4 divisions</div></div>
+      <div class="stile reveal" style="transition-delay:.24s"><div class="k">Divisions</div><div class="v" data-to="4">0</div><div class="d">live now</div></div>
+    </div>
+    <div class="chartbox reveal">
+      <div class="k">Registrations · last 8 weeks</div>
+      <svg id="chart" viewBox="0 0 700 220" width="100%" height="200" preserveAspectRatio="none">
+        <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#C9A227" stop-opacity=".35"/><stop offset="100%" stop-color="#C9A227" stop-opacity="0"/>
+        </linearGradient></defs>
+        <line class="grid-l" x1="0" y1="55" x2="700" y2="55"/><line class="grid-l" x1="0" y1="110" x2="700" y2="110"/><line class="grid-l" x1="0" y1="165" x2="700" y2="165"/>
+        <path id="area" class="area"></path>
+        <path id="line" class="ln"></path>
+        <g id="dots"></g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="eyebrow reveal">Two ways in</div>
+    <h2 class="t reveal">Free Agent or Player</h2>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(270px,1fr))">
+      <div class="card reveal">
+        <div class="shine"></div>
+        <div class="num" style="color:var(--muted)">FREE AGENT · FREE</div>
+        <h3>Sign up &amp; get seen</h3>
+        <p style="margin-bottom:14px">Create your player profile so scouts and coaches can find you. View-only default profile — your way into the league.</p>
+        <div style="font-size:13px;color:var(--muted);line-height:1.9">✓ Default player profile<br>✓ Discoverable by teams<br>✗ No team roster access yet</div>
+        <button style="margin-top:18px;width:100%;padding:12px;border:1px solid var(--gold);background:transparent;color:var(--gold-l);font:800 13px 'Archivo';letter-spacing:.1em;border-radius:12px;cursor:pointer">Create free profile</button>
+      </div>
+      <div class="card reveal" style="transition-delay:.1s;border-color:rgba(201,162,39,.6)">
+        <div class="shine"></div>
+        <div class="num">PLAYER · ROSTERED</div>
+        <h3>Registered to play</h3>
+        <p style="margin-bottom:14px">On a division team and in the game. Full stats, schedule, standings, and RFID court check-in.</p>
+        <div style="font-size:13px;color:var(--muted);line-height:1.9">✓ Full player profile + stats<br>✓ Team roster &amp; schedule<br>✓ RFID game check-in</div>
+        <button style="margin-top:18px;width:100%;padding:12px;border:none;background:var(--gold);color:#000;font:800 13px 'Archivo';letter-spacing:.1em;border-radius:12px;cursor:pointer">Register a team</button>
+      </div>
+    </div>
+    <p class="reveal" style="text-align:center;color:var(--muted);font-size:13px;margin-top:22px">Sign up as a <b style="color:var(--gold-l);font-weight:500">Free Agent</b> → get drafted → become a <b style="color:var(--gold-l);font-weight:500">Player</b>.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="eyebrow reveal">Secure sign-in</div>
+    <h2 class="t reveal">Verify your account</h2>
+    <div class="otpwrap reveal">
+      <div class="glass">
+        <div class="ic">🔑</div>
+        <h3>Verify <span>OTP</span></h3>
+        <p class="hint">Enter the 6-digit code sent to your email</p>
+        <div class="otp" id="otp"></div>
+        <p class="resend">Didn't get it? <b>Resend in 00:36</b></p>
+        <button class="verify" id="verify" disabled>Verify code</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>© <span id="y"></span> NXGEN Premier League · F.A.E. · Lipa City, Batangas</footer>
+
+<script>
+document.getElementById('y').textContent=new Date().getFullYear();
+const glow=document.getElementById('glow'),hero=document.getElementById('hero'),mag=document.getElementById('mag');
+hero.addEventListener('pointermove',e=>{const r=hero.getBoundingClientRect();
+ glow.style.setProperty('--mx',(e.clientX-r.left)+'px');glow.style.setProperty('--my',(e.clientY-r.top)+'px');});
+mag.addEventListener('pointermove',e=>{const r=mag.getBoundingClientRect();
+ mag.style.transform=`translate(${(e.clientX-r.left-r.width/2)*.3}px,${(e.clientY-r.top-r.height/2)*.4}px)`;});
+mag.addEventListener('pointerleave',()=>{mag.style.transform='';});
+document.querySelectorAll('.card').forEach(c=>{
+ c.addEventListener('pointermove',e=>{const r=c.getBoundingClientRect();
+  const rx=((e.clientY-r.top)/r.height-.5)*-11,ry=((e.clientX-r.left)/r.width-.5)*11;
+  c.style.transform=`perspective(720px) rotateX(${rx}deg) rotateY(${ry}deg) translateZ(6px)`;});
+ c.addEventListener('pointerleave',()=>{c.style.transform='';});});
+const data=[8,14,11,22,19,28,26,37],W=700,H=220,pad=10,max=40;
+const pts=data.map((v,i)=>[pad+i*((W-2*pad)/(data.length-1)),H-pad-(v/max)*(H-2*pad)]);
+const lp=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+document.getElementById('line').setAttribute('d',lp);
+document.getElementById('area').setAttribute('d',lp+` L ${pts[pts.length-1][0]} ${H} L ${pts[0][0]} ${H} Z`);
+const dg=document.getElementById('dots');pts.forEach(p=>{const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+ c.setAttribute('cx',p[0]);c.setAttribute('cy',p[1]);c.setAttribute('r',3.5);c.setAttribute('class','dot');dg.appendChild(c);});
+const io=new IntersectionObserver(es=>es.forEach(en=>{if(!en.isIntersecting)return;en.target.classList.add('in');
+ en.target.querySelectorAll&&en.target.querySelectorAll('.v[data-to]').forEach(el=>{let n=0,to=+el.dataset.to;const t=setInterval(()=>{n+=Math.ceil(to/38);if(n>=to){n=to;clearInterval(t);}el.textContent=n;},26);});
+ if(en.target.querySelector&&en.target.querySelector('#line'))en.target.querySelector('#line').classList.add('draw');
+ io.unobserve(en.target);}),{threshold:.25});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+const otp=document.getElementById('otp'),verify=document.getElementById('verify'),ins=[];
+for(let i=0;i<6;i++){const inp=document.createElement('input');inp.maxLength=1;inp.inputMode='numeric';
+ inp.style.animationDelay=(i*.07)+'s';otp.appendChild(inp);ins.push(inp);
+ inp.addEventListener('input',()=>{if(!/^\d$/.test(inp.value)){inp.value='';return;}if(i<5)ins[i+1].focus();check();});
+ inp.addEventListener('keydown',e=>{if(e.key==='Backspace'&&!inp.value&&i>0)ins[i-1].focus();});}
+function check(){verify.disabled=ins.some(x=>!x.value);}
+verify.addEventListener('click',()=>{verify.textContent='Verifying…';setTimeout(()=>verify.textContent='Verified ✓',1400);});
+</script>
+</body>
+</html>
