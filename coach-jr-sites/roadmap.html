@@ -1,0 +1,504 @@
+<title>F.A.E. Web Build Roadmap</title>
+<meta name="description" content="Roadmap, live status and a fill-in questionnaire for the six F.A.E. sites under faeph.com — built to share with Alvin.">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+  :root{
+    --bg:#0b0c0f; --surface:#14161b; --surface2:#1b1e25; --border:#2a2e38;
+    --text:#f3f4f6; --muted:#9aa0ab; --silver:#c9ccd3; --gold:#c9a227; --gold-soft:#e6c65a;
+    --live:#43c463; --prog:#e0b234; --todo:#6b7280;
+    --r:14px; --maxw:1080px;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:'Outfit',system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding-block:34px;padding-inline:18px}
+  h1,h2,h3{margin:0;text-wrap:balance;font-weight:700;letter-spacing:-.02em}
+  h1{font-size:clamp(28px,5vw,42px);font-weight:800}
+  h2{font-size:clamp(20px,3vw,26px);margin-bottom:14px}
+  h3{font-size:17px}
+  p{margin:0}
+  a{color:var(--gold-soft)}
+  .eyebrow{text-transform:uppercase;letter-spacing:.18em;font-size:11px;color:var(--gold);font-weight:600}
+  .muted{color:var(--muted)}
+  .silver{color:var(--silver)}
+
+  /* header */
+  header{border-bottom:1px solid var(--border);padding-bottom:26px;margin-bottom:30px}
+  .brand-row{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:baseline;justify-content:space-between}
+  .meta{font-size:13px;color:var(--muted);text-align:right}
+  .logo{display:inline-flex;align-items:center;gap:12px}
+  .badge{width:44px;height:44px;border-radius:11px;background:linear-gradient(150deg,#22252d,#0d0e12);border:1px solid var(--border);display:grid;place-items:center;font-weight:800;color:var(--gold);letter-spacing:-.04em;font-size:15px}
+  .sub{margin-top:6px;color:var(--muted);max-width:64ch;font-size:15px}
+
+  section{margin-bottom:40px}
+  .lead{color:var(--muted);max-width:70ch;margin-bottom:18px;font-size:15px}
+
+  /* key points */
+  .keys{background:linear-gradient(160deg,#191b21,#111318);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:var(--r);padding:20px 22px}
+  .keys ul{margin:10px 0 0;padding-left:18px;display:grid;gap:7px}
+  .keys li{font-size:14.5px}
+  .keys b{color:var(--silver);font-weight:600}
+
+  /* status board */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 18px 16px;display:flex;flex-direction:column;gap:10px}
+  .card .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .dom{font-weight:700;font-size:15px}
+  .dom small{display:block;color:var(--muted);font-weight:400;font-size:12.5px;margin-top:2px}
+  .pill{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:4px 9px;border-radius:100px;white-space:nowrap}
+  .pill.live{background:rgba(67,196,99,.14);color:var(--live);border:1px solid rgba(67,196,99,.35)}
+  .pill.prog{background:rgba(224,178,52,.14);color:var(--prog);border:1px solid rgba(224,178,52,.35)}
+  .pill.todo{background:rgba(107,114,128,.16);color:#aeb4bf;border:1px solid rgba(107,114,128,.4)}
+  .card p{font-size:13.5px;color:var(--silver)}
+  .next{font-size:12.5px;color:var(--muted);margin-top:auto;padding-top:8px;border-top:1px dashed var(--border)}
+  .next b{color:var(--gold-soft);font-weight:600}
+
+  /* roadmap */
+  .weeks{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+  .week{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 16px 14px}
+  .week .wk-h{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
+  .week .wk-h .n{font-size:26px;font-weight:800;color:var(--gold);line-height:1;letter-spacing:-.04em}
+  .week .wk-h .l{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .week ul{margin:0;padding-left:16px;display:grid;gap:8px}
+  .week li{font-size:13.5px;color:var(--silver)}
+  .week li b{color:var(--text);font-weight:600}
+
+  /* vision */
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .vbox{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px}
+  .vbox h3{color:var(--gold-soft);margin-bottom:4px}
+  .vbox .hint{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+
+  /* questions */
+  .q{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:14px}
+  .q .qh{display:flex;gap:10px;align-items:flex-start}
+  .q .num{flex:none;width:26px;height:26px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);display:grid;place-items:center;font-size:13px;font-weight:700;color:var(--gold)}
+  .q .qt{font-size:15.5px;font-weight:600}
+  .q .qhelp{font-size:12.5px;color:var(--muted);margin:4px 0 0 36px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0 36px}
+  .chip{font-size:12.5px;padding:7px 12px;border-radius:100px;border:1px solid var(--border);background:var(--surface2);color:var(--silver);cursor:pointer;user-select:none;transition:.12s}
+  .chip:hover{border-color:var(--gold)}
+  .chip.on{background:var(--gold);color:#161200;border-color:var(--gold);font-weight:600}
+  .tag{display:inline-block;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:10px 0 0 36px}
+  textarea{width:100%;margin-top:8px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:11px 12px;font-family:inherit;font-size:14px;resize:vertical;min-height:64px}
+  textarea:focus,.chip:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .q textarea{margin-left:36px;width:calc(100% - 36px)}
+
+  /* architecture */
+  .arch{display:flex;flex-direction:column;gap:9px}
+  .layer{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+  .layer .lt{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--gold);font-weight:700;margin-bottom:5px}
+  .layer .ld{font-size:13px;color:var(--silver)}
+  .layer.hub{background:linear-gradient(160deg,#1c1f27,#111318);border-color:var(--gold);text-align:center}
+  .layer.hub .big{font-size:clamp(20px,4vw,26px);font-weight:800;letter-spacing:-.02em;color:var(--text);margin-bottom:4px}
+  .subrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:9px;margin-top:2px}
+  .subx{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+  .subx b{display:block;font-size:13.5px;color:var(--gold-soft)}
+  .subx span{font-size:12px;color:var(--muted)}
+  .foundation{background:linear-gradient(160deg,#191b21,#0e0f13);border-left:3px solid var(--gold)}
+  .arw{text-align:center;color:var(--gold);font-size:14px;line-height:1;opacity:.8}
+  #dbstate{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:100px;margin-left:2px}
+  #dbstate.dboff{color:var(--muted);border:1px solid var(--border)}
+  #dbstate.dbon{color:var(--live);border:1px solid rgba(67,196,99,.4);background:rgba(67,196,99,.12)}
+
+  .qgroup{font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--gold);font-weight:700;margin:24px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+  .qgroup:first-child{margin-top:2px}
+
+  /* export */
+  .export{background:linear-gradient(160deg,#191b21,#111318);border:1px solid var(--border);border-radius:var(--r);padding:20px}
+  .btnrow{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+  button.act{font-family:inherit;font-size:14px;font-weight:600;padding:10px 16px;border-radius:10px;border:1px solid var(--gold);background:var(--gold);color:#161200;cursor:pointer}
+  button.ghost{background:transparent;color:var(--silver);border:1px solid var(--border)}
+  button.act:active{transform:translateY(1px)}
+  #out{min-height:180px;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12.5px}
+  .ok{color:var(--live);font-size:13px;margin-left:10px;opacity:0;transition:.2s}
+  .ok.show{opacity:1}
+  .foot{margin-top:34px;border-top:1px solid var(--border);padding-top:16px;font-size:12.5px;color:var(--muted)}
+  @media(max-width:640px){.two{grid-template-columns:1fr}.meta{text-align:left}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand-row">
+      <div class="logo">
+        <div class="badge">FAE</div>
+        <div>
+          <div class="eyebrow">F.A.E. Sports Management Services · Lipa City, Batangas</div>
+          <h1>Business &amp; Technology Roadmap</h1>
+        </div>
+      </div>
+      <div class="meta">
+        Updated 22 Sep 2026<br>
+        For: Coach Jr &amp; Alvin<br>
+        Repo: <a href="https://github.com/alvinwquach/nxgen-faeph">alvinwquach/nxgen-faeph</a>
+      </div>
+    </div>
+    <p class="sub">One umbrella at <b class="silver">faeph.com</b> with a service subdomain for each offering, run from a central command center. This page shows the system architecture, what's live now, a build plan, and collects your + Alvin's answers — pick the chips, type in the boxes, then hit <b class="silver">Copy for Alvin</b> at the bottom.</p>
+  </header>
+
+  <!-- KEY POINTS -->
+  <section>
+    <div class="keys">
+      <div class="eyebrow">Key points</div>
+      <ul>
+        <li><b>4 subdomains live:</b> faeph.com (hub), nxgen.faeph.com, bookings.faeph.com and linkmeio.faeph.com are all up on Vercel, off Lovable.</li>
+        <li><b>3 reserved:</b> basketball.faeph.com, volleyball.faeph.com and apex.faeph.com are claimed and redirect to the hub until their sites are built.</li>
+        <li><b>Everything stays free:</b> Vercel + Supabase, no paid hosting. Bookings default to reserve-now / pay-at-court to avoid payment fees at launch.</li>
+        <li><b>Same recipe each new site:</b> premium single-page (hero → services → milestones → reviews → booking/CTA), gold-on-black brand, lead capture everywhere.</li>
+        <li><b>Basketball &amp; volleyball</b> get built from your Facebook (filamelitebasketball) — photos, reviews, milestones — and each adds a Clinics program.</li>
+        <li><b>You answer the questions below</b> so Alvin can lock scope. That's the one thing blocking a fast start.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ARCHITECTURE -->
+  <section>
+    <div class="eyebrow">How it all fits together</div>
+    <h2>Integrated Business &amp; Technology Architecture</h2>
+    <p class="lead">The full F.A.E. Sports Management Services system — one hub, a service subdomain for each offering, all run from a central command center and database.</p>
+    <div class="arch">
+      <div class="layer hub">
+        <div class="lt">Main domain &amp; hub</div>
+        <div class="big">FAEPH.COM</div>
+        <div class="ld">Umbrella hub for every subdomain · hosts the master database + command-center access · connects clients, members &amp; staff in one unified system.</div>
+      </div>
+      <div class="arw">▼</div>
+      <div class="layer">
+        <div class="lt">Subdomain ecosystem — a website per service</div>
+        <div class="subrow">
+          <div class="subx"><b>Bookings</b><span>Facility &amp; event scheduling</span></div>
+          <div class="subx"><b>Nxgen</b><span>Player analytics &amp; performance tracking</span></div>
+          <div class="subx"><b>Basketball</b><span>League management + skills clinics</span></div>
+          <div class="subx"><b>Volleyball</b><span>Tournament ops + coaching clinics</span></div>
+          <div class="subx"><b>Linkmeio</b><span>Livestream &amp; media hub</span></div>
+          <div class="subx"><b>Apex</b><span>Sportswear &amp; equipment sales</span></div>
+        </div>
+      </div>
+      <div class="arw">▼</div>
+      <div class="layer">
+        <div class="lt">Members &amp; clients</div>
+        <div class="ld">Members use the subdomains for services &amp; data · clients connect via FAEPH.com for inquiries &amp; bookings · the integrated <b class="silver">Wi-Fi Café System</b> sells buyable data &amp; connectivity.</div>
+      </div>
+      <div class="arw">▼</div>
+      <div class="layer">
+        <div class="lt">Master control</div>
+        <div class="ld">Full authority over all operations · approves admin actions &amp; monitors analytics · keeps FAEPH.com and every subdomain in sync.</div>
+      </div>
+      <div class="arw">▼</div>
+      <div class="layer">
+        <div class="lt">Admin &amp; staff</div>
+        <div class="ld">Operations team runs bookings, payments &amp; schedules through the Command Center software, and keeps in contact with clients &amp; members.</div>
+      </div>
+      <div class="arw">▼</div>
+      <div class="layer foundation">
+        <div class="lt">Command center &amp; database — operational core</div>
+        <div class="ld">Centralized software controls all subdomains · the FAEPH.com database stores all system data securely · enables real-time updates, automation &amp; analytics.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATUS -->
+  <section>
+    <div class="eyebrow">Where things stand</div>
+    <h2>Live status of your sites</h2>
+    <p class="lead">Pulled from our build history. "Next" is the single next move for each.</p>
+    <div class="grid">
+      <div class="card">
+        <div class="top"><div class="dom">faeph.com<small>FAE Hub — main landing</small></div><span class="pill live">Live</span></div>
+        <p>Premium animated landing deployed on Vercel, fully off Lovable. Sponsor form saves to your own Supabase. Logos/court render, console clean.</p>
+        <div class="next"><b>Next:</b> wire the service links to each subdomain as they go live (coming-soon stubs for the rest).</div>
+      </div>
+      <div class="card">
+        <div class="top"><div class="dom">nxgen.faeph.com<small>NXGEN Premier League</small></div><span class="pill live">Live</span></div>
+        <p>Off Lovable, on Vercel, own Supabase. Email OTP login verified end-to-end. Google login configured. Glassy 6-digit OTP shipped.</p>
+        <div class="next"><b>Next:</b> publish the Google OAuth app + finish Free Agent (view-only lead) gating.</div>
+      </div>
+      <div class="card">
+        <div class="top"><div class="dom">bookings.faeph.com<small>Facility scheduling + WiFi café</small></div><span class="pill live">Live</span></div>
+        <p>Deployed on Vercel on its own subdomain. Court rental, WiFi café (buyable data), basketball, pickleball, volleyball. New: birthday bookings. Recent: BPO sportsfest.</p>
+        <div class="next"><b>Next:</b> confirm the full booking flow + wire the WiFi café buyable-data step.</div>
+      </div>
+      <div class="card">
+        <div class="top"><div class="dom">linkmeio.faeph.com<small>Livestream &amp; media hub</small></div><span class="pill live">Live</span></div>
+        <p>Deployed on Vercel. Livestreaming, NFC digital business cards, social-media content, and website/business-flow services.</p>
+        <div class="next"><b>Next:</b> finalize service scope + lead form.</div>
+      </div>
+      <div class="card">
+        <div class="top"><div class="dom">basketball.faeph.com<small>League + Basketball Clinics</small></div><span class="pill prog">Reserved</span></div>
+        <p>Subdomain claimed (redirects to hub for now). To build: league management + <b>Basketball Clinics</b> (skills training, performance programs), from your Facebook — reviews, milestones.</p>
+        <div class="next"><b>Next:</b> approve the FB research + page outline (I can draft it).</div>
+      </div>
+      <div class="card">
+        <div class="top"><div class="dom">volleyball.faeph.com<small>Tournaments + Volleyball Clinics</small></div><span class="pill prog">Reserved</span></div>
+        <p>Subdomain claimed. To build: tournament operations + <b>Volleyball Clinics</b> (team drills, coaching sessions). Same recipe as basketball, your volleyball FB.</p>
+        <div class="next"><b>Next:</b> reuse the basketball template once approved.</div>
+      </div>
+      <div class="card">
+        <div class="top"><div class="dom">apex.faeph.com<small>Sportswear &amp; equipment</small></div><span class="pill prog">Reserved</span></div>
+        <p>Subdomain claimed. To build: an online store for F.A.E. sportswear &amp; equipment sales.</p>
+        <div class="next"><b>Next:</b> decide product list + whether checkout is online or reserve-and-pay.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROADMAP -->
+  <section>
+    <div class="eyebrow">Proposed plan</div>
+    <h2>The 4-week roadmap</h2>
+    <p class="lead">My recommended order — highest leverage first, cheapest to ship. Adjust with your answers below.</p>
+    <div class="weeks">
+      <div class="week">
+        <div class="wk-h"><span class="n">1</span><span class="l">This week</span></div>
+        <ul>
+          <li><b>Hub links:</b> wire faeph.com to the 4 live subdomains (nxgen, bookings, linkmeio) + reserved ones.</li>
+          <li><b>Bookings:</b> confirm full booking flow + WiFi café buyable-data step.</li>
+          <li><b>NXGEN:</b> publish Google OAuth app + Free Agent gating.</li>
+        </ul>
+      </div>
+      <div class="week">
+        <div class="wk-h"><span class="n">2</span><span class="l">Week 2</span></div>
+        <ul>
+          <li><b>Basketball:</b> FB research, build league + Clinics single-page.</li>
+          <li>Flip <b>basketball.faeph.com</b> from redirect to the live site.</li>
+        </ul>
+      </div>
+      <div class="week">
+        <div class="wk-h"><span class="n">3</span><span class="l">Week 3</span></div>
+        <ul>
+          <li><b>Volleyball:</b> clone basketball, swap in tournaments + Clinics content.</li>
+          <li>Flip <b>volleyball.faeph.com</b> live.</li>
+        </ul>
+      </div>
+      <div class="week">
+        <div class="wk-h"><span class="n">4</span><span class="l">Week 4</span></div>
+        <ul>
+          <li><b>Apex store:</b> build sportswear &amp; equipment sales; flip <b>apex.faeph.com</b> live.</li>
+          <li>Polish LinkMePH + bookings; add birthday bookings + BPO sportsfest.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- VISION -->
+  <section>
+    <div class="eyebrow">The picture</div>
+    <h2>Vision — short vs long term</h2>
+    <p class="lead">You're sending these to Alvin yourself — a starting take is pre-filled if you'd rather edit it here (it exports too).</p>
+    <div class="two">
+      <div class="vbox">
+        <h3>Short term (this month)</h3>
+        <div class="hint">What "done" looks like in 4 weeks.</div>
+        <textarea id="vision_short">All 6 sites live under faeph.com on free hosting, one consistent brand, every page capturing leads. Bookings taking real reservations.</textarea>
+      </div>
+      <div class="vbox">
+        <h3>Long term (6–12 months)</h3>
+        <div class="hint">Where F.A.E. is headed.</div>
+        <textarea id="vision_long">F.A.E. as the umbrella brand: RFID card for door/court/cafe/WiFi, resell the NXGEN league template to other organizers, and grow LinkMePH into a paid digital-services arm.</textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUESTIONS -->
+  <section>
+    <div class="eyebrow">For you &amp; Alvin</div>
+    <h2>Questions to lock the scope</h2>
+    <p class="lead">Grouped into Priorities, Resources, and how you &amp; Alvin actually work together. Tap the chips that apply and type any detail — you don't have to answer every one. <b class="silver">Answers now save to a shared database</b> — Alvin sees them live, no copy-paste needed. <span id="dbstate" class="dboff">○ Saving locally (open in claude.ai to sync)</span></p>
+    <div id="questions"></div>
+  </section>
+
+  <!-- EXPORT -->
+  <section>
+    <div class="export">
+      <div class="eyebrow">Send it</div>
+      <h2 style="margin-top:6px">Copy your answers for Alvin</h2>
+      <p class="lead" style="margin-bottom:14px">Compiles everything above into plain text. Paste it into a message to Alvin.<span id="ok" class="ok">Copied ✓</span></p>
+      <div class="btnrow">
+        <button class="act" id="copy">Copy for Alvin</button>
+        <button class="act ghost" id="build">Preview text</button>
+        <button class="act ghost" id="reset">Clear my answers</button>
+      </div>
+      <textarea id="out" placeholder="Your compiled answers appear here…"></textarea>
+    </div>
+  </section>
+
+  <div class="foot">Answers save to a shared database when opened in claude.ai (Alvin sees them live if the artifact is shared with him). The "Copy for Alvin" button is still there as a backup. Brand: gold #C9A227 on black, per F.A.E. identity.</div>
+</div>
+
+<script>
+const QS = [
+  // ---- PRIORITIES & SCOPE ----
+  {id:'wk1', num:1, group:'Priorities & scope', alvin:true, q:"What features do you want up and ready by the END OF THIS WEEK?", help:"Pick the must-haves. Be ruthless — fewer = faster.",
+   type:'multi', opts:["Hub links working","Bookings taking reservations","NXGEN Google login live","NXGEN Free Agent signup","A coming-soon page per site","Basketball site draft"]},
+  {id:'wk24', num:2, group:'Priorities & scope', alvin:true, q:"What about weeks 2, 3 and 4?", help:"Roughly what lands each week. My proposal is in the roadmap above — change it if you disagree.",
+   type:null, opts:[]},
+  {id:'prio', num:3, group:'Priorities & scope', alvin:false, q:"Which ONE site is top priority to finish first?", help:"Everything else lines up behind it.",
+   type:'single', opts:["faeph.com hub polish","nxgen.faeph.com","bookings.faeph.com","basketball.faeph.com","volleyball.faeph.com","linkmeio.faeph.com"]},
+  {id:'mvp', num:4, group:'Priorities & scope', alvin:false, q:"What's the smallest launchable version (MVP) you'd accept per site?", help:"So Alvin ships something live fast instead of chasing perfect. e.g. \"1 page + contact button is enough for launch.\"",
+   type:null, opts:[]},
+  {id:'booktypes', num:5, group:'Priorities & scope', alvin:false, q:"For bookings — which booking types MUST work at launch?", help:"",
+   type:'multi', opts:["Court rental","WiFi cafe","Basketball","Pickleball","Volleyball","Birthday bookings","BPO sportsfest"]},
+  {id:'pay', num:6, group:'Priorities & scope', alvin:false, q:"Do bookings need online payment at launch?", help:"Reserve-now / pay-at-court keeps it free (no payment fees or setup).",
+   type:'single', opts:["Reserve now, pay at court (free)","Online payment required","Not sure — advise me"]},
+  {id:'bbgoal', num:7, group:'Priorities & scope', alvin:false, q:"Basketball & volleyball sites — what's the main goal?", help:"",
+   type:'multi', opts:["Showcase / brand","Recruit players (leads)","Sell programs / training","Show schedule & results"]},
+  {id:'reviews', num:8, group:'Priorities & scope', alvin:false, q:"Where should reviews / testimonials come from?", help:"You mentioned using your Facebook reviews.",
+   type:'multi', opts:["Pull from Facebook manually","Embed FB reviews widget","Collect new via a form","Skip for now"]},
+
+  // ---- ACCESS, CONTENT & RESOURCES ----
+  {id:'dns', num:9, group:'Access, content & resources', alvin:false, q:"Who controls the domain / DNS to add subdomains?", help:"Needed to point basketball., volleyball., linkmeio., bookings. to the sites.",
+   type:'single', opts:["Me (Coach Jr)","Alvin","Shared access"]},
+  {id:'assets', num:10, group:'Access, content & resources', alvin:false, q:"What content do you already HAVE vs need?", help:"Tap what's ready; note what's missing in the box.",
+   type:'multi', opts:["Logos","Photos","Videos","Written copy","Pricing","Schedules","Reviews"]},
+  {id:'copy', num:11, group:'Access, content & resources', alvin:false, q:"Who writes the website copy (the text on each page)?", help:"Often the real bottleneck. I can draft all of it from your Facebook + notes.",
+   type:'single', opts:["I'll write it","Alvin","Claude drafts it","Mix of us"]},
+  {id:'stack', num:12, group:'Access, content & resources', alvin:false, q:"Stack for the new sites?", help:"Matching Alvin's NXGEN repo keeps it consistent; static is faster/cheaper for simple marketing sites.",
+   type:'single', opts:["Match NXGEN (React/TanStack + Vercel)","Simple static site","Whatever's fastest — you decide"]},
+  {id:'budget', num:13, group:'Access, content & resources', alvin:false, q:"Budget for this?", help:"",
+   type:'single', opts:["Free only","Small budget if needed","Will spend where it matters"]},
+  {id:'time', num:14, group:'Access, content & resources', alvin:false, q:"Weekly time budget — you and Alvin?", help:"Honest hours per week. Sets a realistic pace.",
+   type:null, opts:[]},
+  {id:'deadline', num:15, group:'Access, content & resources', alvin:false, q:"Any hard deadline or event to hit?", help:"e.g. a BPO sportsfest date, a launch, a tournament.",
+   type:null, opts:[]},
+
+  // ---- WORKFLOW & COLLABORATION ----
+  {id:'divide', num:16, group:'Workflow & collaboration', alvin:false, q:"How do you and Alvin split the work?", help:"The clearer this is, the less you step on each other.",
+   type:'single', opts:["Alvin builds, I supply content","Split by site (each owns some)","We pair on each site","Not sure — suggest a split"]},
+  {id:'track', num:17, group:'Workflow & collaboration', alvin:false, q:"How do you track progress together?", help:"Pick what you'll actually use.",
+   type:'multi', opts:["This roadmap doc","Chat / Messenger","GitHub issues","Notion / Trello","A weekly call"]},
+  {id:'handoff', num:18, group:'Workflow & collaboration', alvin:false, q:"How do you hand content (photos, logos, copy) to Alvin?", help:"Slow handoff is the #1 thing that stalls builds.",
+   type:'multi', opts:["Shared Google Drive folder","One shared doc","Send in chat","He pulls from Facebook"]},
+  {id:'approve', num:19, group:'Workflow & collaboration', alvin:false, q:"Who signs off before a site goes live?", help:"",
+   type:'single', opts:["Me (Coach Jr)","Alvin","Both of us"]},
+  {id:'cadence', num:20, group:'Workflow & collaboration', alvin:false, q:"How often do you want a progress check-in?", help:"",
+   type:'single', opts:["Daily quick update","2–3× a week","Once a week"]},
+  {id:'feedback', num:21, group:'Workflow & collaboration', alvin:false, q:"How do you want to give feedback on a build?", help:"So changes are clear and don't get lost.",
+   type:'multi', opts:["Screenshots with notes","Comments on the preview link","A written change list","Voice note / call"]},
+  {id:'staging', num:22, group:'Workflow & collaboration', alvin:false, q:"Want a preview link before each domain goes live?", help:"Vercel gives free preview URLs — review before pointing the real domain.",
+   type:'single', opts:["Yes, always","Only for the big ones","No, just ship it"]},
+  {id:'donedef', num:23, group:'Workflow & collaboration', alvin:false, q:"What counts as “done” for a site?", help:"Set the finish line so nothing drags.",
+   type:'multi', opts:["Deployed to its domain","Content is final","Lead / contact form works","Looks good on mobile","Analytics turned on"]},
+  {id:'analytics', num:24, group:'Workflow & collaboration', alvin:false, q:"Track visitors & leads from day one?", help:"Free options exist (Vercel Analytics / a simple counter).",
+   type:'single', opts:["Yes, from launch","Add it later","Don't need it"]},
+];
+
+const KEY='fae-roadmap-v1';
+const state = load();
+
+function load(){ try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return {}} }
+function save(){ try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){} scheduleDbSave(); }
+
+/* shared database sync */
+let dbRef=null, dbTimer=null;
+function scheduleDbSave(){
+  if(!dbRef) return;
+  clearTimeout(dbTimer);
+  dbTimer=setTimeout(()=>{ try{ dbRef.set(JSON.parse(JSON.stringify(state))).catch(()=>{}); }catch(e){} }, 700);
+}
+function applyRemote(data){
+  if(!data) return;
+  ['vision_short','vision_long'].forEach(k=>{
+    if(typeof data[k]==='string'){ state[k]=data[k]; const el=document.getElementById(k); if(el && document.activeElement!==el) el.value=data[k]; }
+  });
+  QS.forEach(Q=>{
+    const rd=data[Q.id]; if(!rd||typeof rd!=='object') return;
+    state[Q.id]=state[Q.id]||{sel:[],note:''};
+    if(Array.isArray(rd.sel)){ state[Q.id].sel=rd.sel.slice();
+      const box=host.querySelector('.chips[data-qid="'+Q.id+'"]');
+      if(box) box.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on', rd.sel.includes(c.dataset.val)));
+    }
+    if(typeof rd.note==='string'){ state[Q.id].note=rd.note; const t=document.getElementById(Q.id+'_note'); if(t && document.activeElement!==t) t.value=rd.note; }
+  });
+  const s=document.getElementById('dbstate'); if(s){ s.textContent='● Synced to shared database'; s.className='dbon'; }
+}
+(async()=>{
+  try{
+    if(!(window.claude && window.claude.use)) return;
+    const db = await window.claude.use('db');
+    if(!db) return;
+    dbRef = db.doc('roadmap/answers');
+    dbRef.onSnapshot(snap=>applyRemote(snap.data()), ()=>{});
+  }catch(e){}
+})();
+
+const host = document.getElementById('questions');
+let lastGroup='';
+QS.forEach(Q=>{
+  if(Q.group && Q.group!==lastGroup){ lastGroup=Q.group; const g=document.createElement('div'); g.className='qgroup'; g.textContent=Q.group; host.appendChild(g); }
+  state[Q.id] = state[Q.id] || {sel:[], note:''};
+  const el = document.createElement('div'); el.className='q';
+  let chips='';
+  if(Q.opts.length){
+    chips = `<div class="chips" data-qid="${Q.id}" data-type="${Q.type}">`+
+      Q.opts.map(o=>`<span class="chip${state[Q.id].sel.includes(o)?' on':''}" tabindex="0" data-val="${o.replace(/"/g,'&quot;')}">${o}</span>`).join('')+`</div>`;
+  }
+  el.innerHTML = `
+    <div class="qh"><div class="num">${Q.num}</div><div class="qt">${Q.q}</div></div>
+    ${Q.help?`<div class="qhelp">${Q.help}</div>`:''}
+    ${Q.alvin?`<div class="tag">Alvin's question</div>`:''}
+    ${chips}
+    <textarea id="${Q.id}_note" placeholder="Your answer / notes…">${state[Q.id].note||''}</textarea>`;
+  host.appendChild(el);
+});
+
+// chip toggling
+host.addEventListener('click', e=>{
+  const c = e.target.closest('.chip'); if(!c) return;
+  toggle(c);
+});
+host.addEventListener('keydown', e=>{
+  if((e.key===' '||e.key==='Enter') && e.target.classList.contains('chip')){ e.preventDefault(); toggle(e.target); }
+});
+function toggle(c){
+  const box=c.closest('.chips'), qid=box.dataset.qid, type=box.dataset.type, val=c.dataset.val;
+  const st=state[qid];
+  if(type==='single'){
+    box.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+    if(st.sel.includes(val)){ st.sel=[]; } else { c.classList.add('on'); st.sel=[val]; }
+  }else{
+    if(st.sel.includes(val)){ st.sel=st.sel.filter(v=>v!==val); c.classList.remove('on'); }
+    else { st.sel.push(val); c.classList.add('on'); }
+  }
+  save();
+}
+// notes + vision persistence
+document.addEventListener('input', e=>{
+  if(e.target.tagName!=='TEXTAREA') return;
+  const id=e.target.id;
+  if(id==='vision_short'||id==='vision_long'){ state[id]=e.target.value; }
+  else if(id.endsWith('_note')){ const qid=id.slice(0,-5); if(state[qid]) state[qid].note=e.target.value; }
+  save();
+});
+// restore vision
+if(state.vision_short) document.getElementById('vision_short').value=state.vision_short;
+if(state.vision_long) document.getElementById('vision_long').value=state.vision_long;
+
+function build(){
+  let t='F.A.E. WEB BUILD — ANSWERS FOR ALVIN\n'+'='.repeat(40)+'\n\n';
+  t+='VISION\n- Short term: '+(document.getElementById('vision_short').value||'—')+'\n';
+  t+='- Long term: '+(document.getElementById('vision_long').value||'—')+'\n\n';
+  t+='QUESTIONS\n';
+  let lg='';
+  QS.forEach(Q=>{
+    if(Q.group && Q.group!==lg){ lg=Q.group; t+=`\n--- ${Q.group.toUpperCase()} ---\n`; }
+    const st=state[Q.id]||{sel:[],note:''};
+    t+=`\n${Q.num}. ${Q.q}\n`;
+    if(st.sel.length) t+='   Picked: '+st.sel.join(', ')+'\n';
+    if(st.note && st.note.trim()) t+='   Notes: '+st.note.trim()+'\n';
+    if(!st.sel.length && !(st.note&&st.note.trim())) t+='   (no answer yet)\n';
+  });
+  t+='\n'+'='.repeat(40)+'\nGenerated from the F.A.E. Web Build Roadmap.';
+  return t;
+}
+document.getElementById('build').onclick=()=>{ document.getElementById('out').value=build(); };
+document.getElementById('copy').onclick=async()=>{
+  const txt=build(); document.getElementById('out').value=txt;
+  try{ await navigator.clipboard.writeText(txt); flash(); }
+  catch(e){ const o=document.getElementById('out'); o.focus(); o.select(); try{document.execCommand('copy');flash();}catch(_){} }
+};
+function flash(){ const k=document.getElementById('ok'); k.classList.add('show'); setTimeout(()=>k.classList.remove('show'),1800); }
+document.getElementById('reset').onclick=()=>{
+  if(!confirm('Clear all your answers on this page?')) return;
+  try{localStorage.removeItem(KEY)}catch(e){}
+  location.reload();
+};
+</script>
