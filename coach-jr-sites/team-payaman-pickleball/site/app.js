@@ -16,7 +16,7 @@ function applyConfig() { // defaults are read from the page itself the first tim
   document.querySelectorAll('[data-cfg-href]').forEach(el => { const k = el.dataset.cfgHref; if (!(k in CFG_DEFAULT)) CFG_DEFAULT[k] = el.getAttribute('href'); el.setAttribute('href', SITE[k] ?? CFG_DEFAULT[k]); });
   document.querySelectorAll('[data-price]').forEach(el => { el.textContent = peso(PRICES[el.dataset.price]); });
 }
-function refreshSite() { renderBooker(); renderMatches(); renderWifi('#wifiPortal'); renderWifi('#wifiPublic'); applyConfig(); }
+function refreshSite() { renderBooker(); renderMatches(); renderWifi('#wifiPortal'); renderWifi('#wifiPublic'); renderAchievements(); applyConfig(); }
 const peso = n => '₱' + n.toLocaleString('en-PH');
 const EMAIL = /^[^ @]+@[^ @]+[.][^ @]{2,}$/;
 
@@ -105,7 +105,8 @@ function renderBooker() {
   const b = $('#bookBtn'), hs = S.sel.hours, n = hs.length;
   S.sel.dayLabel = days[S.sel.day];
   b.disabled = !n; b.style.opacity = n ? 1 : .45;
-  $('#bookSummary').innerHTML = !n ? 'Tap one or more open hours.' : `<b>Court ${S.sel.court + 1}</b> · ${days[S.sel.day]} · ${hourRanges(hs)} · ${n} hour${n > 1 ? 's' : ''} × ${peso(PRICES.court)} = <b class="text-lime">${peso(n * PRICES.court)}</b>`;
+  const nb = S.user && nextBadge('hours'), nudge = nb && n >= nb.need - PLAYER.hours ? ` · <span class="text-gold"><i class="fa-solid fa-medal"></i> unlocks ${bText(nb, 'name')}</span>` : '';
+  $('#bookSummary').innerHTML = !n ? 'Tap one or more open hours.' : `<b>Court ${S.sel.court + 1}</b> · ${days[S.sel.day]} · ${hourRanges(hs)} · ${n} hour${n > 1 ? 's' : ''} × ${peso(PRICES.court)} = <b class="text-lime">${peso(n * PRICES.court)}</b>${nudge}`;
 }
 function toggleHour(h) { const hs = S.sel.hours, i = hs.indexOf(h); if (i < 0) hs.push(h); else hs.splice(i, 1); hs.sort((a, b) => a - b); renderBooker(); }
 function startBooking() {
@@ -121,7 +122,9 @@ function pay(method) {
   if (typeof DB !== 'undefined') DB.payments.unshift({ ref: 'PP' + String(Date.now()).slice(-6), what: p.label, method, amt: p.amt, st: 'Pending' });
   if (p.kind === 'book') {
     p.hours.forEach(h => { S.taken.add(p.day + '-' + p.court + '-' + h); if (p.day === 0 && typeof DB !== 'undefined') DB.schedule[p.court + '-' + h] = { who: S.user ? S.user.name : 'Online booking', st: 'Booked' }; });
-    MY_BOOKINGS.unshift({ what: p.label.split(' · ')[0], when: p.label.split(' · ')[1], st: 'Upcoming' }); S.sel.hours = []; renderBooker(); renderMyBookings(); toast('Booked via ' + method + '. See you on court');
+    MY_BOOKINGS.unshift({ what: p.label.split(' · ')[0], when: p.label.split(' · ')[1], st: 'Upcoming' }); S.sel.hours = []; renderBooker(); renderMyBookings();
+    toast('Booked via ' + method + (S.user ? '. See you on court' : '. Log in to earn badges for every hour'));
+    if (S.user) addProgress('hours', p.hours.length);
   }
   if (p.kind === 'unlock') { const m = MATCHES.find(x => x.id === p.id); m.locked = false; renderMatches(); toast('Unlocked via ' + method + '. Yours to keep'); }
   if (p.kind === 'wifi') showQR('WiFi voucher ready', p.label + ' · connect at the venue', 'PLAYHOUSE-WIFI-' + Date.now());
@@ -132,7 +135,7 @@ function unlock(id) { const m = MATCHES.find(x => x.id === id); S.pay = { kind: 
 // ---------- portal ----------
 function pTab(n) {
   document.querySelectorAll('[data-ptab]').forEach(b => b.setAttribute('aria-selected', b.dataset.ptab === n));
-  ['matches', 'bookings', 'wifi', 'profile'].forEach(t => $('#ptab-' + t).classList.toggle('hide', t !== n));
+  ['matches', 'badges', 'bookings', 'wifi', 'profile'].forEach(t => $('#ptab-' + t).classList.toggle('hide', t !== n));
 }
 function renderMatches() {
   $('#matchList').innerHTML = MATCHES.map(m => `
@@ -164,6 +167,115 @@ function renderHome() {
   const row = TAGS.map((t, i) => `<span class="${t.startsWith('#') || t.startsWith('@') ? '' : 'text-lime'}" data-cfg="Hashtags · Tag ${i + 1}">${t}</span>`).join('');
   $('#mq').innerHTML = row + row;
 }
+
+// ---------- achievements: milestones players share, rewards that bring them back ----------
+// ponytail: tiers and rewards are proposals for the owners to confirm; names and rewards are editable in console > Configuration.
+const PLAYER = { matches: 9, hours: 9, streak: 3 };   // demo player: one match and one court hour from the next badges
+const UNITS = { matches: ['matches recorded', 'match recorded'], hours: ['hours on court', 'hour on court'], streak: ['weeks in a row', 'week in a row'] };
+const BADGES = [
+  { track: 'matches', need: 1, name: 'First Serve', reward: 'Your first highlight reel', fa: 'fa-table-tennis-paddle-ball' },
+  { track: 'matches', need: 10, name: 'Kitchen Regular', reward: 'One free keep-forever unlock', fa: 'fa-fire' },
+  { track: 'matches', need: 25, name: 'Dink Master', reward: 'Free 1-day WiFi pass', fa: 'fa-star' },
+  { track: 'matches', need: 50, name: 'Third Shot Pro', reward: 'One free court hour', fa: 'fa-bolt' },
+  { track: 'matches', need: 100, name: 'Playground Legend', reward: 'Name on the Legends wall', fa: 'fa-crown' },
+  { track: 'hours', need: 1, name: 'Court Opener', reward: 'Member rates unlocked', fa: 'fa-calendar-check' },
+  { track: 'hours', need: 10, name: 'Court Captain', reward: '10% off your next booking', fa: 'fa-medal' },
+  { track: 'hours', need: 25, name: 'Home Court Hero', reward: 'One free court hour', fa: 'fa-trophy' },
+  { track: 'hours', need: 50, name: 'Playhouse VIP', reward: 'Early access to prime slots', fa: 'fa-gem' },
+  { track: 'streak', need: 3, name: 'On a Roll', reward: 'Free 1-hour WiFi', fa: 'fa-fire-flame-curved' },
+  { track: 'streak', need: 8, name: 'Unstoppable', reward: 'Free open play session', fa: 'fa-rocket' }
+];
+const unit = (b, n = b.need) => UNITS[b.track][n === 1 ? 1 : 0];
+const bKey = (b, f) => `Achievements · ${b.need} ${unit(b)} · ${f}`;
+const bText = (b, f) => SITE[bKey(b, f)] ?? b[f];
+const unlocked = b => PLAYER[b.track] >= b.need;
+const nextBadge = track => BADGES.find(b => b.track === track && !unlocked(b));
+function renderAchievements() {
+  $('#pGames').textContent = PLAYER.matches; $('#pHours').textContent = PLAYER.hours + 'h';
+  $('#achNext').innerHTML = ['matches', 'hours'].map(nextBadge).filter(Boolean).map(b => {
+    const left = b.need - PLAYER[b.track], word = unit(b, left).split(' ')[0];
+    return `<div class="card p-5 flex gap-4 items-start"><div class="medal-sm"><i class="fa-solid ${b.fa}"></i></div><div class="flex-1 min-w-0">
+      <p class="text-xs text-muted">Next badge</p><p class="font-bold text-lg" data-cfg="${bKey(b, 'name')}">${b.name}</p>
+      <div class="bar mt-3"><span style="width:${PLAYER[b.track] / b.need * 100}%"></span></div>
+      <p class="text-sm mt-3"><b class="text-lime num">${left}</b> more ${word} to go · <span class="text-gold" data-cfg="${bKey(b, 'reward')}">${b.reward}</span></p>
+      <button class="btn ${b.track === 'hours' ? 'btn-lime' : 'btn-ghost'} !py-2 text-sm mt-4" onclick="go('home','courts')"><i class="fa-solid fa-calendar-plus"></i>${b.track === 'hours' ? `Book ${left} hour${left > 1 ? 's' : ''}` : 'Book a recorded game'}</button></div></div>`;
+  }).join('');
+  $('#achGrid').innerHTML = BADGES.map((b, i) => { const on = unlocked(b); return `<article class="badge-card card p-5 ${on ? 'on' : ''}">
+    <div class="medal"><i class="fa-solid ${b.fa}"></i></div><p class="font-bold mt-4" data-cfg="${bKey(b, 'name')}">${b.name}</p>
+    <p class="text-xs text-muted num">${b.need} ${unit(b)}</p><p class="text-xs mt-2 text-gold" data-cfg="${bKey(b, 'reward')}">${b.reward}</p>
+    ${on ? `<button class="btn btn-lime !py-1.5 !px-3 text-xs mt-4" onclick="openShare(${i})"><i class="fa-solid fa-share-nodes"></i>Share</button>`
+         : `<div class="bar mt-4 w-full"><span style="width:${Math.min(100, PLAYER[b.track] / b.need * 100)}%"></span></div>`}</article>`; }).join('');
+}
+function addProgress(track, n) {
+  const before = BADGES.filter(unlocked);
+  PLAYER[track] += n; renderAchievements(); applyConfig();
+  const fresh = BADGES.filter(b => unlocked(b) && !before.includes(b));
+  if (fresh.length) setTimeout(() => openShare(BADGES.indexOf(fresh[fresh.length - 1]), true), 900);
+}
+
+// Share card: drawn on a canvas in the brand style, sized for a feed post (4:5) or a story (9:16).
+let SH = { i: 0, fmt: 'post' };
+const IMGS = {};
+const loadImg = src => IMGS[src] || (IMGS[src] = new Promise(r => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = src; }));
+function caption(b) {
+  const n = b.need, name = bText(b, 'name'), site = location.host;
+  const line = {
+    matches: n === 1 ? 'First match on the record at @playhousepickleco 🏓 Every rally, caught on camera. Who wants the rematch?'
+                     : `${n} matches recorded at @playhousepickleco and counting 🏓🔥 ${name} unlocked. See you on court.`,
+    hours: n === 1 ? 'Booked my first court at @playhousepickleco 🏓 Your pickleball playground in Molino, Bacoor.'
+                   : `${n} hours on court at @playhousepickleco ⏱️🏓 ${name} unlocked. Book yours at ${site}`,
+    streak: `${n} weeks in a row at @playhousepickleco 🔥 ${name}. Tara, laro tayo!`
+  }[b.track];
+  return `${line}\n\n#${name.replace(/[^A-Za-z]/g, '')} #pickleball #playhousepickleballco #bacoorcavite #TeamPayaman`;
+}
+function openShare(i, fresh) {
+  const b = BADGES[i]; SH.i = i;
+  $('#shKicker').textContent = fresh ? 'Achievement unlocked!' : 'Share your milestone';
+  $('#shTitle').textContent = `${bText(b, 'name')} · ${b.need} ${unit(b)}`;
+  $('#shCaption').value = caption(b); shareFmt(SH.fmt); openDlg('dlgShare');
+}
+function shareFmt(f) { SH.fmt = f; document.querySelectorAll('[data-fmt]').forEach(el => el.setAttribute('aria-pressed', el.dataset.fmt === f)); drawShare(); }
+function fit(x, text, max, size, weight, fam) { do { x.font = `${weight} ${size}px ${fam}`; size -= 4; } while (x.measureText(text).width > max && size > 36); }
+async function drawShare() {
+  const b = BADGES[SH.i], story = SH.fmt === 'story', W = 1080, H = story ? 1920 : 1350, c = $('#shCanvas'), x = c.getContext('2d');
+  await Promise.all(['800 100px Archivo', '600 40px Geist'].map(f => document.fonts.load(f))).catch(() => {});
+  const [brand, pm] = await Promise.all([loadImg('img/brand.svg'), loadImg('img/p-mark.svg')]);
+  c.width = W; c.height = H; x.textAlign = 'center';
+  x.fillStyle = '#0B0B0D'; x.fillRect(0, 0, W, H);
+  const g = x.createRadialGradient(W * .8, H * .15, 0, W * .8, H * .15, W); g.addColorStop(0, 'rgba(221,224,29,.30)'); g.addColorStop(1, 'rgba(221,224,29,0)');
+  x.fillStyle = g; x.fillRect(0, 0, W, H);
+  x.strokeStyle = 'rgba(221,224,29,.16)'; x.lineWidth = 3; x.beginPath();                          // court in perspective
+  x.moveTo(W * .06, H); x.lineTo(W * .36, H * .66); x.lineTo(W * .64, H * .66); x.lineTo(W * .94, H); x.moveTo(W * .5, H * .66); x.lineTo(W * .5, H); x.stroke();
+  if (pm) { const ph = H * .5; x.globalAlpha = .09; x.drawImage(pm, W - ph * .95, H - ph * .9, ph * 1.28, ph); x.globalAlpha = 1; }
+  if (brand) x.drawImage(brand, 80, 80, 360, 360 * 221 / 700);
+  const cy = H * (story ? .42 : .43), R = 240;
+  x.fillStyle = '#DDE01D'; x.font = '600 36px Geist'; if ('letterSpacing' in x) x.letterSpacing = '8px';
+  x.fillText('ACHIEVEMENT UNLOCKED', W / 2, cy - R - 64); if ('letterSpacing' in x) x.letterSpacing = '0px';
+  x.beginPath(); x.arc(W / 2, cy, R, 0, Math.PI * 2); x.fillStyle = '#141418'; x.fill(); x.lineWidth = 14; x.strokeStyle = '#DDE01D'; x.stroke();
+  x.beginPath(); x.arc(W / 2, cy, R - 30, 0, Math.PI * 2); x.lineWidth = 3; x.strokeStyle = 'rgba(221,224,29,.35)'; x.stroke();
+  if ('fontStretch' in x) x.fontStretch = 'expanded';
+  x.textBaseline = 'middle'; x.fillStyle = '#F3F4EE'; fit(x, String(b.need), R * 1.5, 230, 800, 'Archivo'); x.fillText(b.need, W / 2, cy - 22);
+  x.fillStyle = '#DDE01D'; x.font = '700 38px Geist'; x.fillText(unit(b).toUpperCase(), W / 2, cy + 112);
+  x.textBaseline = 'alphabetic'; x.fillStyle = '#F3F4EE'; const title = bText(b, 'name').toUpperCase();
+  fit(x, title, W - 160, 110, 800, 'Archivo'); x.fillText(title, W / 2, cy + R + 150);
+  if ('fontStretch' in x) x.fontStretch = 'normal';
+  x.fillStyle = '#B8B9B0'; x.font = '500 40px Geist';
+  x.fillText(`${S.user ? S.user.name : 'Playhouse player'} · ${new Date().toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}`, W / 2, cy + R + 225);
+  const perk = 'Reward: ' + bText(b, 'reward'), py = cy + R + (story ? 330 : 290);   // the perk is what makes friends book
+  x.font = '600 34px Geist'; const pw = x.measureText(perk).width + 72;
+  x.beginPath(); x.roundRect(W / 2 - pw / 2, py - 46, pw, 68, 34); x.fillStyle = 'rgba(221,224,29,.14)'; x.fill(); x.lineWidth = 2; x.strokeStyle = '#DDE01D'; x.stroke();
+  x.fillStyle = '#DDE01D'; x.fillText(perk, W / 2, py);
+  x.fillStyle = '#DDE01D'; x.font = '700 40px Geist'; x.fillText('Your pickleball playground', W / 2, H - 150);
+  x.fillStyle = '#9A9BA2'; x.font = '500 32px Geist'; x.fillText('Molino, Bacoor · #playhousepickleballco', W / 2, H - 96);
+}
+const shareBlob = () => new Promise(r => $('#shCanvas').toBlob(r, 'image/png'));
+async function shareNow() {
+  const file = new File([await shareBlob()], 'playhouse-pickle-achievement.png', { type: 'image/png' }), text = $('#shCaption').value;
+  if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], text }); } catch (e) {} return; }
+  await shareDownload(); shareCopy('Image saved and caption copied. Post it on Facebook, Instagram or TikTok.');
+}
+async function shareDownload() { const a = document.createElement('a'); a.href = URL.createObjectURL(await shareBlob()); a.download = 'playhouse-pickle-achievement.png'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1500); }
+function shareCopy(msg) { const t = $('#shCaption').value; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast(msg || 'Caption copied'), () => toast('Select the caption and copy it')); }
 
 // ---------- motion: layered hero, the P serves the ball into "Book a court" ----------
 function initMotion() {

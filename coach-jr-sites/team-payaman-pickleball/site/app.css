@@ -72,6 +72,12 @@ label{font-size:12px;color:var(--muted);display:block;margin:0 0 .35rem}
 .founder img{position:absolute;max-width:none;height:auto;filter:grayscale(.35) contrast(1.05);transition:filter .5s ease}
 .founder:hover img{filter:none}
 .wipe{clip-path:inset(0 0 100% 0)}
+.badge-card{text-align:center;display:flex;flex-direction:column;align-items:center}
+.badge-card:not(.on){opacity:.72}
+.medal,.medal-sm{border-radius:50%;display:grid;place-items:center;background:#1c1c22;color:#5c5d62;border:2px solid #2a2a2e;flex-shrink:0}
+.medal{width:64px;height:64px;font-size:24px}
+.medal-sm{width:48px;height:48px;font-size:18px;color:var(--lime);border-color:rgba(221,224,29,.5)}
+.badge-card.on .medal{background:radial-gradient(circle at 30% 30%,#2c2d10,#141418);color:var(--lime);border-color:var(--lime);box-shadow:0 0 24px rgba(221,224,29,.25)}
 .partner img{height:54px;width:auto;object-fit:contain;opacity:.85;transition:opacity .2s}
 .partner:hover img{opacity:1}
 

@@ -80,6 +80,11 @@
           <div class="card p-4"><dt class="text-xs text-muted">Open play</dt><dd class="font-bold text-xl mt-1 num"><span data-price="open">₱250</span> <span class="text-sm font-normal text-muted">/ person</span></dd></div>
           <div class="card p-4 col-span-2"><dt class="text-xs text-muted">Open play blocks</dt><dd class="font-semibold mt-1" data-cfg="Booking · Open play blocks">1PM to 5PM · 5PM to 9PM</dd></div>
         </dl>
+        <div class="card p-5 mt-3 max-w-md" style="border-color:rgba(221,224,29,.3)">
+          <p class="font-semibold"><i class="fa-solid fa-medal text-lime mr-2"></i><span data-cfg="Booking · Rewards title">Play more, unlock more</span></p>
+          <p class="text-sm text-slate-300 mt-2" data-cfg="Booking · Rewards text">Every hour you book and every match you record earns a badge you can share, plus rewards: 10% off at 10 hours, a free court hour at 25.</p>
+          <button class="text-sm text-lime font-semibold mt-3 hover:underline" onclick="S.user ? (go('portal'), pTab('badges')) : openDlg('dlgAuth')">See the badges <i class="fa-solid fa-arrow-right text-xs"></i></button>
+        </div>
       </div>
       <div class="lg:col-span-3 card p-5 md:p-7 reveal" id="booker">
         <div class="flex flex-wrap gap-2" id="dayChips" role="group" aria-label="Day"></div>
@@ -192,8 +197,8 @@
       <div class="mt-8 flex gap-6 text-sm relative"><div><p class="text-muted text-xs">Tier</p><p class="font-bold text-gold">Premium</p></div><div><p class="text-muted text-xs">Player ID</p><p class="font-bold num">PH-0142</p></div><div><p class="text-muted text-xs">Renews</p><p class="font-bold num">Jan 14, 2027</p></div></div>
     </div>
     <div class="lg:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div class="card p-5"><p class="display text-3xl text-lime num">28</p><p class="text-xs text-muted mt-2">Games played</p></div>
-      <div class="card p-5"><p class="display text-3xl text-lime num">41h</p><p class="text-xs text-muted mt-2">Court time</p></div>
+      <div class="card p-5"><p class="display text-3xl text-lime num" id="pGames">0</p><p class="text-xs text-muted mt-2">Matches recorded</p></div>
+      <div class="card p-5"><p class="display text-3xl text-lime num" id="pHours">0h</p><p class="text-xs text-muted mt-2">Court time</p></div>
       <div class="card p-5"><p class="display text-3xl text-lime num" id="pClips">0</p><p class="text-xs text-muted mt-2">Highlight clips</p></div>
       <div class="card p-5"><p class="display text-3xl text-gold num" id="pExpiring">0</p><p class="text-xs text-muted mt-2">Expiring soon</p></div>
       <div class="card p-5 col-span-2 md:col-span-4 flex flex-wrap items-center justify-between gap-4">
@@ -205,6 +210,7 @@
 
   <div class="flex gap-1 mt-10 border-b border-white/10 overflow-x-auto" role="tablist">
     <button class="tab" role="tab" data-ptab="matches" aria-selected="true" onclick="pTab('matches')">My matches</button>
+    <button class="tab" role="tab" data-ptab="badges" aria-selected="false" onclick="pTab('badges')">Achievements</button>
     <button class="tab" role="tab" data-ptab="bookings" aria-selected="false" onclick="pTab('bookings')">Bookings</button>
     <button class="tab" role="tab" data-ptab="wifi" aria-selected="false" onclick="pTab('wifi')">WiFi</button>
     <button class="tab" role="tab" data-ptab="profile" aria-selected="false" onclick="pTab('profile')">Profile</button>
@@ -212,6 +218,11 @@
   <div id="ptab-matches" class="pt-6">
     <p class="text-sm text-slate-300 mb-5"><span class="text-gold font-semibold">Grace period:</span> every match stays in the cloud for 30 days. Unlock the ones you love to keep them forever, now or any time before the timer runs out.</p>
     <div id="matchList" class="grid md:grid-cols-2 gap-5"></div>
+  </div>
+  <div id="ptab-badges" class="pt-6 hide">
+    <p class="text-sm text-slate-300 mb-5"><span class="text-lime font-semibold">Badges:</span> every recorded match and every hour on court counts. Share a badge to your stories, then claim the reward at the front desk.</p>
+    <div id="achNext" class="grid md:grid-cols-2 gap-4 mb-6"></div>
+    <div id="achGrid" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
   </div>
   <div id="ptab-bookings" class="pt-6 hide"><div id="myBookings" class="space-y-3"></div></div>
   <div id="ptab-wifi" class="pt-6 hide"><div id="wifiPortal" class="grid md:grid-cols-3 gap-4"></div></div>
@@ -295,6 +306,19 @@
   <h2 class="font-bold text-lg" id="qrTitle"></h2><p class="text-xs text-muted" id="qrSub"></p>
   <div class="bg-white rounded-xl p-3 inline-block"><img id="qrImg" width="200" height="200" alt="QR code"></div>
   <p class="text-[11px] text-muted">Demo QR.</p>
+</form></dialog>
+
+<dialog id="dlgShare"><form method="dialog" class="p-6 space-y-4 relative">
+  <button class="x" aria-label="Close">&times;</button>
+  <div><p class="text-lime font-semibold text-sm" id="shKicker">Share your milestone</p><h2 class="font-bold text-xl mt-1" id="shTitle"></h2></div>
+  <div class="flex gap-2" role="group" aria-label="Image size"><button type="button" class="chip text-sm" data-fmt="post" onclick="shareFmt('post')">Post 4:5</button><button type="button" class="chip text-sm" data-fmt="story" onclick="shareFmt('story')">Story 9:16</button></div>
+  <canvas id="shCanvas" class="rounded-xl" style="display:block;margin:auto;width:auto;max-width:100%;max-height:46vh" aria-label="Achievement card preview"></canvas>
+  <textarea id="shCaption" rows="4" aria-label="Caption"></textarea>
+  <div class="grid grid-cols-3 gap-2">
+    <button type="button" class="btn btn-lime justify-center !px-2" onclick="shareNow()"><i class="fa-solid fa-share-nodes"></i>Share</button>
+    <button type="button" class="btn btn-ghost justify-center !px-2" onclick="shareDownload()"><i class="fa-solid fa-download"></i>Save</button>
+    <button type="button" class="btn btn-ghost justify-center !px-2" onclick="shareCopy()"><i class="fa-regular fa-copy"></i>Caption</button>
+  </div>
 </form></dialog>
 
 <dialog id="dlgDrawer" class="drawer"><div class="p-6 h-full overflow-y-auto relative" id="drawerBody"></div></dialog>

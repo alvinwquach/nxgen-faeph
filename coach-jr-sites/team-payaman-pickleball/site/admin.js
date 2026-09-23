@@ -173,6 +173,7 @@ const CAMPAIGNS = [
   { n: 'Your highlights expire soon', d: 'Grace-period reminder with a one-tap ₱99 keep-forever link.', aud: () => 4 + DB.customers.filter(c => c.t === 'Lead').length },
   { n: 'Open play tonight', d: '5PM to 9PM block, ₱250, first come first served.', aud: () => 210 + DB.customers.length },
   { n: 'Become a member', d: 'Invite leads to a free account and member rates.', aud: () => DB.customers.filter(c => c.t === 'Lead').length },
+  { n: 'Badge unlocked', d: 'Automatic: when a player hits 10 matches or 10 court hours, email their shareable badge card and reward.', aud: () => DB.customers.filter(c => c.t !== 'Lead').length },
   { n: 'Tournament sponsors wanted', d: 'Call for 2027 Playhouse Pickle Tournament partners.', aud: () => 38 }
 ];
 
