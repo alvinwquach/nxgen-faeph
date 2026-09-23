@@ -16,6 +16,7 @@ own repo (`filamelitebasketball/fae-software`); we keep the two repos separate o
 | **basketball.faeph.com** | ⚪ Planned | Premium site from my Facebook (filamelitebasketball). |
 | **volleyball.faeph.com** | ⚪ Planned | Same recipe, volleyball. |
 | **linkmeio.faeph.com** — LinkMePH | ⚪ Planned | Livestreaming, NFC digital cards, social content, website/business-flow. |
+| **sample.faeph.com** — Team Payaman Pickleball (Playhouse Pickle) | 🟡 Client demo | Owned portal + owner console demo, plus the PickleCam Highlight Cutter desktop app. Folder `team-payaman-pickleball/`. |
 
 ## Links
 - Live hub: https://faeph.com
