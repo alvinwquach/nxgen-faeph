@@ -11,14 +11,13 @@ import { WifiPanel } from "@/components/fae/Wifi";
 import { supabase } from "@/integrations/supabase/client";
 import { formatHour, formatPeso, SPORTS, type SportKey } from "@/lib/constants";
 import { cancelBooking, depositDue, getMyBookings, getMyProfile, getMyTabs, holdRemainingMs } from "@/lib/fae.functions";
-import { cancelCafeBooking, getMyCafeBookings } from "@/lib/cafe.functions";
-import type { BookingRow, CafeBookingWithStation, TabItem } from "@/lib/fae.types";
+import type { BookingRow, TabItem } from "@/lib/fae.types";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
     meta: [
        { title: "My Bookings — FAE Bookings" },
-       { name: "description", content: "Your F.A.E. gaming station and court bookings, counter tab and membership." },
+       { name: "description", content: "Your F.A.E. court bookings, WiFi passes, counter tab and membership." },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -46,11 +45,9 @@ function AccountPage() {
     queryFn: () => getMyBookings({ data: undefined }),
   });
   const { data: tabsData } = useQuery({ queryKey: ["my-tabs"], queryFn: () => getMyTabs({ data: undefined }) });
-  const { data: cafeData } = useQuery({ queryKey: ["my-cafe-bookings"], queryFn: () => getMyCafeBookings({ data: undefined }), refetchInterval: 15_000 });
 
   const bookings: BookingRow[] = bookingsData?.bookings ?? [];
   const member = profile?.member ?? bookingsData?.member ?? null;
-  const cafeBookings = (cafeData?.bookings ?? []) as CafeBookingWithStation[];
 
   const active = bookings.filter((b) => b.status !== "Cancelled");
   const upcoming = active.filter((b) => slotStartMs(b) > Date.now());
@@ -66,14 +63,6 @@ function AccountPage() {
     } catch (error) {
       toast(error instanceof Error ? error.message : "Could not cancel this booking.");
     }
-  };
-  const onCancelCafe = async (booking: CafeBookingWithStation) => {
-    try {
-      await cancelCafeBooking({ data: { id: booking.id } });
-      toast(`Cancelled ${booking.ref}.`);
-      queryClient.invalidateQueries({ queryKey: ["my-cafe-bookings"] });
-      queryClient.invalidateQueries({ queryKey: ["cafe-availability"] });
-    } catch (error) { toast(error instanceof Error ? error.message : "Could not cancel this reservation."); }
   };
 
   const signOut = async () => {
@@ -106,7 +95,7 @@ function AccountPage() {
           </div>
           <div className="flex gap-3">
             {profile?.isAdmin ? (
-              <Button variant="gold" size="sm" onClick={() => navigate({ to: "/admin" })}>
+              <Button variant="gold" size="sm" onClick={() => navigate({ to: "/admin-v2" })}>
                 Admin panel
               </Button>
             ) : null}
@@ -131,17 +120,6 @@ function AccountPage() {
               <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{stat.label}</p>
             </div>
           ))}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 pb-10 sm:px-6">
-        <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="font-mono text-[10px] uppercase tracking-[.2em] text-gold">Gaming lounge</p><h2 className="mt-2 font-display text-xl font-bold text-foreground">My station bookings</h2></div><Button variant="gold" size="sm" onClick={() => navigate({ to: "/stations" })}>Book a station</Button></div>
-        <div className="mt-5 space-y-3">
-          {cafeBookings.length === 0 ? <div className="rounded-lg border border-dashed border-border bg-surface-1 p-8 text-center text-sm text-muted-foreground">No gaming sessions yet.</div> : cafeBookings.map((b) => {
-            const start = Date.parse(`${b.date}T${String(b.start_hour).padStart(2,"0")}:00:00+08:00`);
-            const cancellable = !["cancelled","completed"].includes(b.status) && start > Date.now();
-            return <div key={b.id} className="flex flex-wrap items-center gap-4 rounded-lg border border-border bg-surface-2 p-4"><span className="flex h-10 w-10 items-center justify-center rounded-lg border border-goldline bg-gold/10 text-gold"><Icon name="monitor" size={19}/></span><div className="min-w-0 flex-1"><p className="font-semibold text-foreground">{b.cafe_stations?.name ?? "Gaming station"} · {new Date(`${b.date}T00:00:00+08:00`).toLocaleDateString("en-PH",{weekday:"short",month:"short",day:"numeric"})}</p><p className="mt-1 font-mono text-[10px] uppercase text-muted-foreground">{formatHour(b.start_hour)}–{formatHour(b.start_hour+b.hours)} · {b.ref} · {formatPeso(b.amount)}</p></div><Badge variant={b.status==="cancelled"?"red":b.status==="completed"?"green":"gold"}>{b.status}</Badge>{cancellable&&<Button variant="ghost" size="sm" onClick={()=>onCancelCafe(b)}>Cancel</Button>}</div>;
-          })}
         </div>
       </section>
 
@@ -260,7 +238,7 @@ function AccountPage() {
           WiFi at the court
         </h2>
         <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-          Order a WiFi pass for the F.A.E. internet cafe. Pay at the counter and staff switch it on.
+          Order an F.A.E. WiFi pass. Pay at the counter and staff switch it on.
         </p>
         <div className="mt-5">
           <WifiPanel />

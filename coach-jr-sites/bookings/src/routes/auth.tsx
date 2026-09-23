@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 // Google is hidden until VITE_ENABLE_GOOGLE="true" is set (and Google is enabled
 // in the bookings Supabase project) — otherwise the button would throw
 // "provider is not enabled". Email login is the default.
-const ENABLE_GOOGLE = import.meta.env.VITE_ENABLE_GOOGLE === "true";
+const ENABLE_GOOGLE = import.meta.env["VITE_ENABLE_GOOGLE"] === "true";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>) => {
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
        { title: "Sign in — FAE Bookings" },
-       { name: "description", content: "Sign in to reserve gaming stations and courts and manage all your F.A.E. bookings." },
+       { name: "description", content: "Sign in to reserve courts and WiFi passes and manage all your F.A.E. bookings." },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -120,10 +120,10 @@ function AuthPage() {
             <p className="font-display text-3xl font-extrabold uppercase leading-tight text-foreground">
               One account.
               <br />
-               Every station.
+               Every court.
             </p>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
-               Reserve gaming PCs, PS5 consoles and courts from one member account.
+               Reserve courts and WiFi passes from one member account.
             </p>
           </div>
           <p className="relative font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">

@@ -612,6 +612,26 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 <div class="page" id="pg-cashflow">
   <div class="sec-hero"><div class="sec-hero-icon" style="background:var(--accent-dim);color:var(--accent)">&#128176;</div><div><div class="sec-hero-title">Cash Flow & Payments</div><div class="sec-hero-sub">Jun 7 &ndash; Sep 4, 2026 &middot; Complete financial overview</div></div><div style="margin-left:auto"><button class="btn-accent btn btn-premium" onclick="openModal('payment')">+ Record Payment</button></div></div>
 
+  <!-- Income calculator: desk/court takings + program income, summed over a chosen period (money roles only) -->
+  <div class="card grid-full" id="incomeCalc" style="display:none">
+    <div class="card-title">Income Calculator &middot; by period</div>
+    <div id="calcPeriods" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+      <button class="btn btn-sm" onclick="setCalcPeriod('today',this)">Today</button>
+      <button class="btn btn-sm" onclick="setCalcPeriod('week',this)">This week</button>
+      <button class="btn btn-sm btn-accent" onclick="setCalcPeriod('month',this)">This month</button>
+      <button class="btn btn-sm" onclick="setCalcPeriod('year',this)">This year</button>
+      <button class="btn btn-sm" onclick="setCalcPeriod('all',this)">All time</button>
+      <button class="btn btn-sm" onclick="setCalcPeriod('custom',this)">Custom</button>
+    </div>
+    <div id="calcCustom" style="display:none;gap:10px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+      <label style="font-size:12px;color:var(--text-muted)">From <input type="date" id="calcFrom" onchange="renderIncomeCalc()" style="background:var(--panel,#161616);color:inherit;border:1px solid var(--line2,#333);border-radius:8px;padding:6px 8px;font-family:inherit"></label>
+      <label style="font-size:12px;color:var(--text-muted)">To <input type="date" id="calcTo" onchange="renderIncomeCalc()" style="background:var(--panel,#161616);color:inherit;border:1px solid var(--line2,#333);border-radius:8px;padding:6px 8px;font-family:inherit"></label>
+    </div>
+    <div id="calcRange" style="font-family:monospace;font-size:11px;color:var(--text-muted);margin-bottom:10px"></div>
+    <div id="calcKpis" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px"></div>
+    <div id="calcBreak" style="margin-top:12px;font-size:12px;color:var(--text-secondary)"></div>
+  </div>
+
   <!-- LIVE income from the FAE Google Sheet + today's desk collections (master/admin only) -->
   <div class="card grid-full" id="cfLiveCard" style="display:none">
     <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
@@ -6521,6 +6541,7 @@ function cfParseCSV(t){var rows=[],row=[],cur='',q=false,i=0;while(i<t.length){v
   row.push(cur);rows.push(row);return rows;}
 function cfNum(s){var n=parseFloat(String(s||'').replace(/[^\d.]/g,''));return isNaN(n)?0:n;}
 function loadCashflowLive(){
+  try{ initIncomeCalc(); }catch(e){}
   var card=document.getElementById('cfLiveCard'); if(!card) return;
   if(!(window.FAE&&FAE.canSeeMoney())){ card.style.display='none'; var pc=document.getElementById('piCard'); if(pc)pc.style.display='none'; return; }
   card.style.display='';
@@ -6561,6 +6582,58 @@ function deskToday(){
     .map(function(c){return c+' ₱'+byCat[c].toLocaleString();}).join(' · ');
   el.innerHTML='Desk collections today (this device): <b style="color:var(--accent)">₱'+(cash+gc).toLocaleString()+'</b> · Cash ₱'+cash.toLocaleString()+' · GCash ₱'+gc.toLocaleString()+' · '+today.length+' payments'
     +(cats?'<br><span style="color:var(--text-muted)">by category: </span>'+cats:'');
+}
+
+/* ===== Income Calculator — desk/court takings + program income over a chosen period =====
+   Reads the two on-device income feeds (fae-takepayment-log and FAE.income()), both of which
+   carry an ISO `ts`, filters by the selected date range, and totals them. Device-local, like the
+   desk-collections note; the Google Sheet remains the cross-device weekly source above. */
+var calcState = { p:'month' };
+function initIncomeCalc(){
+  var card=document.getElementById('incomeCalc'); if(!card) return;
+  if(!(window.FAE && FAE.canSeeMoney())){ card.style.display='none'; return; }
+  card.style.display=''; renderIncomeCalc();
+}
+function calcRange(){
+  var now=new Date(), s=new Date(now), e=new Date(now), p=calcState.p;
+  if(p==='week'){ var dow=(now.getDay()+6)%7; s.setDate(now.getDate()-dow); e=new Date(s); e.setDate(s.getDate()+6); }
+  else if(p==='month'){ s=new Date(now.getFullYear(),now.getMonth(),1); e=new Date(now.getFullYear(),now.getMonth()+1,0); }
+  else if(p==='year'){ s=new Date(now.getFullYear(),0,1); e=new Date(now.getFullYear(),11,31); }
+  else if(p==='all'){ s=new Date(2000,0,1); e=new Date(now.getFullYear()+1,11,31); }
+  else if(p==='custom'){ var f=(document.getElementById('calcFrom')||{}).value, t=(document.getElementById('calcTo')||{}).value;
+    s=f?new Date(f+'T00:00:00'):new Date(2000,0,1); e=t?new Date(t+'T00:00:00'):new Date(now); }
+  s.setHours(0,0,0,0); e.setHours(23,59,59,999); return { s:s, e:e };
+}
+function calcEntries(){
+  var out=[];
+  try{ (JSON.parse(localStorage.getItem('fae-takepayment-log')||'[]')||[]).forEach(function(x){
+    out.push({ amount:+x.amount||0, method:x.method||'Cash', ts:x.ts, src:'court', cat:(x.sport?x.sport+' court':(x.category||'Court rental')) }); }); }catch(e){}
+  try{ if(FAE.income) FAE.income().forEach(function(x){
+    out.push({ amount:+x.amount||0, method:x.method||'Cash', ts:x.ts, src:'program', cat:(x.program==='volleyball'?'FAEVOLLEYBALL':'FAEBASKETBALL')+' · '+(x.category||'Program') }); }); }catch(e){}
+  return out;
+}
+function renderIncomeCalc(){
+  if(!document.getElementById('calcKpis')) return;
+  var r=calcRange(), sMs=r.s.getTime(), eMs=r.e.getTime();
+  var rows=calcEntries().filter(function(x){ var t=Date.parse(x.ts); return !isNaN(t)&&t>=sMs&&t<=eMs; });
+  var total=0,court=0,program=0,cash=0,gc=0,byCat={};
+  rows.forEach(function(x){ total+=x.amount; if(x.src==='program')program+=x.amount; else court+=x.amount;
+    if(/gcash/i.test(x.method))gc+=x.amount; else cash+=x.amount; byCat[x.cat]=(byCat[x.cat]||0)+x.amount; });
+  var peso=function(n){ return '₱'+(n||0).toLocaleString(); };
+  var K=function(l,v,c){ return '<div class="card" style="padding:12px"><div style="font-family:monospace;font-size:9px;letter-spacing:.1em;color:var(--text-muted)">'+l+'</div><div class="amt" style="font-family:Archivo,sans-serif;font-weight:900;font-size:20px;margin-top:6px'+(c?';color:'+c:'')+'">'+peso(v)+'</div></div>'; };
+  var payK='<div class="card" style="padding:12px"><div style="font-family:monospace;font-size:9px;letter-spacing:.1em;color:var(--text-muted)">PAYMENTS</div><div class="amt" style="font-family:Archivo,sans-serif;font-weight:900;font-size:20px;margin-top:6px">'+rows.length+'</div></div>';
+  document.getElementById('calcKpis').innerHTML=K('TOTAL',total,'var(--accent)')+K('COURT / DESK',court)+K('PROGRAM',program)+K('CASH',cash)+K('GCASH',gc)+payK;
+  var cats=Object.keys(byCat).sort(function(a,b){return byCat[b]-byCat[a];}).map(function(c){return c+' '+peso(byCat[c]);}).join(' · ');
+  document.getElementById('calcBreak').innerHTML=cats?('<span style="color:var(--text-muted)">Breakdown: </span>'+cats):'<span style="color:var(--text-muted)">No income recorded in this period on this device.</span>';
+  var fmt=function(d){ try{return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});}catch(e){return '';} };
+  document.getElementById('calcRange').textContent=(calcState.p==='today'?'Today, '+fmt(r.s):fmt(r.s)+' → '+fmt(r.e))+' · this device';
+}
+function setCalcPeriod(p,el){
+  calcState.p=p;
+  var btns=document.querySelectorAll('#calcPeriods button'); for(var i=0;i<btns.length;i++) btns[i].className='btn btn-sm';
+  if(el) el.className='btn btn-sm btn-accent';
+  var cc=document.getElementById('calcCustom'); if(cc) cc.style.display=(p==='custom')?'flex':'none';
+  renderIncomeCalc();
 }
 
 /* Money still OWED on the tournament checkout sheet.

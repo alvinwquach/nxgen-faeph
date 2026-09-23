@@ -18,7 +18,7 @@ import { ToastProvider } from "@/components/fae/Toast";
 
 const JSON_LD = JSON.stringify({
   "@context": "https://schema.org",
-  "@type": ["InternetCafe", "SportsActivityLocation"],
+  "@type": ["SportsActivityLocation"],
    name: "FAE Bookings — Court Rental & Internet Services",
   description:
      "Hourly basketball, volleyball and pickleball court reservations plus internet and data services in Lipa City, Batangas.",
@@ -107,18 +107,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-       { title: "FAE Bookings — Gaming Lounge & Court Reservations in Lipa City" },
+       { title: "FAE Bookings — Court Rental & Internet Services in Lipa City" },
       {
         name: "description",
         content:
-           "Reserve gaming PCs, PS5 stations, basketball, volleyball and pickleball courts at F.A.E. in Lipa City.",
+           "Reserve basketball, volleyball and pickleball courts by the hour and get WiFi and internet data at F.A.E. in Lipa City.",
       },
       { name: "author", content: "F.A.E. Corp" },
-       { property: "og:title", content: "FAE Bookings — Gaming Lounge & Court Reservations" },
+       { property: "og:title", content: "FAE Bookings — Court Rental & Internet Services" },
       {
         property: "og:description",
         content:
-           "Book gaming PCs, PS5 consoles and courts by the hour at F.A.E. in Lipa City.",
+           "Book basketball, volleyball and pickleball courts by the hour, plus WiFi passes and internet data, at F.A.E. in Lipa City.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

@@ -50,14 +50,11 @@ export function KotcBracket({ compact = false }: { compact?: boolean }) {
           .select("id, round, slot, player_a_name, player_b_name, winner")
           .order("round")
           .order("slot"),
-        supabase
-          .from("registrations")
-          .select("full_name")
-          .eq("division", "King of the Court")
-          .is("deleted_at", null),
+        // Names-only public RPC — registrations itself is owner/staff-only (anon got 401).
+        supabase.rpc("get_kotc_pool"),
       ]);
       setMatches((m as BracketMatch[]) ?? []);
-      setPool(((regs as { full_name: string }[]) ?? []).map((r) => r.full_name));
+      setPool(regs ?? []);
       setLoading(false);
     })();
   }, []);

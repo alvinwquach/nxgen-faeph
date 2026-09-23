@@ -96,7 +96,6 @@ export const NETWORK: NetworkProgram[] = [
     url: "https://nxgen.faeph.com",
     external: true,
   },
-  { tag: "Gaming Lounge", name: "Gaming Lounge", icon: "play", accent: "#C9A227", url: "/stations" },
   { tag: "Court Booking", name: "Court Booking", icon: "basketball", accent: "#E8843C", url: "/book" },
   { tag: "Court Schedule", name: "Court Schedule", icon: "calendar", accent: "#5B8FE8", url: "/schedule" },
 ];
@@ -187,7 +186,6 @@ export const FAQ: FaqItem[] = [
   { question: "Can I walk in without a booking?", answer: "Yes, if the court is free. But booking online guarantees your slot. Check the Schedule page to see what's open." },
   { question: "Is parking free?", answer: "Yes — free parking for the duration of your booked slot. Show your booking reference at the gate." },
   { question: "What shoes are allowed on the court?", answer: "Non-marking indoor court shoes only. Outdoor rubber soles stay in the cubbies by the entrance." },
-  { question: "How do I book a gaming station?", answer: "Open Book a Station, pick a PC or console, choose your date and the hours you want, then confirm. Booked hours are locked out for everyone else." },
 ];
 
 /* ---------- Helpers ---------- */

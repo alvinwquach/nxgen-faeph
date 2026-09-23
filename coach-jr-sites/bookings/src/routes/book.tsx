@@ -9,7 +9,8 @@ import { Icon } from "@/components/fae/Icon";
 import { Modal } from "@/components/fae/Modal";
 import { useToast } from "@/components/fae/Toast";
 import { formatHour, formatPeso, HOURS, isMember as tierIsMember, PEAK, SPORTS, SPORT_KEYS, type SportKey } from "@/lib/constants";
-import { groupContiguous, hasPeakHour, priceHours } from "@/lib/booking-utils";
+import { groupContiguous, hasPeakHour, hoursFrom, priceHours, venueNow, venueToday } from "@/lib/booking-utils";
+import { DurationField } from "@/components/fae/DurationField";
 import { createBooking, ensureMemberProfile, getAvailability, getCourtRates, getMyProfile, claimLapsedHolds } from "@/lib/fae.functions";
 import type { BookingResult } from "@/lib/fae.types";
 import { cn } from "@/lib/utils";
@@ -62,7 +63,7 @@ function BookPage() {
 
   const [sport, setSport] = useState<SportKey>(sportParam ?? "basketball");
   const [courtId, setCourtId] = useState<string>(SPORTS[sportParam ?? "basketball"].courts[0]!.id);
-  const [date, setDate] = useState<string>(() => toIso(new Date()));
+  const [date, setDate] = useState<string>(() => venueNow().iso);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [submitting, setSubmitting] = useState(false);
   const [confirmation, setConfirmation] = useState<BookingResult[] | null>(null);
@@ -103,7 +104,7 @@ function BookPage() {
 
   const days = useMemo(() => {
     const out: { iso: string; day: number; weekday: string; isToday: boolean }[] = [];
-    const now = new Date();
+    const now = venueToday();
     for (let i = 0; i < 7; i++) {
       const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
       out.push({ iso: toIso(d), day: d.getDate(), weekday: WEEKDAYS[d.getDay()] ?? "", isToday: i === 0 });
@@ -111,8 +112,9 @@ function BookPage() {
     return out;
   }, []);
 
-  const nowHour = new Date().getHours();
-  const isToday = date === toIso(new Date());
+  const venue = venueNow();
+  const nowHour = venue.hour;
+  const isToday = date === venue.iso;
 
   const pickSport = (key: SportKey) => {
     setSport(key);
@@ -120,7 +122,19 @@ function BookPage() {
     setSelected(new Set());
   };
 
+  const [durationText, setDurationText] = useState("");
+  const [durationError, setDurationError] = useState<string | null>(null);
+  const isOpenHour = (h: number) => HOURS.includes(h) && !taken.has(h) && !(isToday && h <= nowHour);
+
   const toggleHour = (hour: number) => {
+    // Optional typed duration: tapping an hour selects that many hours from it in one block.
+    if (durationText && !selected.has(hour)) {
+      const block = hoursFrom(hour, Number(durationText), isOpenHour);
+      if (typeof block === "string") return setDurationError(block);
+      setDurationError(null);
+      return setSelected(new Set(block));
+    }
+    setDurationError(null);
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(hour)) next.delete(hour);
@@ -285,6 +299,17 @@ function BookPage() {
 
         {/* Step 4 — Time */}
         <Step index={4} title="Time">
+          <div className="mb-4">
+            <DurationField
+              id="book-duration"
+              value={durationText}
+              onChange={(v) => {
+                setDurationText(v);
+                setDurationError(null);
+              }}
+              error={durationError}
+            />
+          </div>
           <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-6">
             {HOURS.map((hour) => {
               const isTaken = taken.has(hour);

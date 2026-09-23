@@ -1,5 +1,11 @@
 import "./lib/error-capture";
 
+// Vercel's runtime never loads .env, so server functions reading process.env saw no
+// Supabase config (admin/account/requests all failed). The public values are inlined
+// at build via VITE_*; seed process.env from them once, for every server caller.
+process.env["SUPABASE_URL"] ??= import.meta.env["VITE_SUPABASE_URL"];
+process.env["SUPABASE_PUBLISHABLE_KEY"] ??= import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
+
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 

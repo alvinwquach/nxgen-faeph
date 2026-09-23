@@ -1228,7 +1228,7 @@ export const createEventBooking = createServerFn({ method: "POST" })
     return { ok: true, ref };
   });
 
-/* ---------- WiFi ordering (internet cafe) ---------- */
+/* ---------- WiFi ordering ---------- */
 
 /** Human-friendly voucher code, e.g. FAE-7K2Q-91X. Ambiguous characters are left out on purpose. */
 function wifiCode(): string {

@@ -276,10 +276,6 @@
   }
 }
 
-.gaming-spotlight {
-  background-image: radial-gradient(circle at 72% 28%, color-mix(in oklab, var(--gold) 15%, transparent), transparent 34%);
-}
-
 .glass-panel {
   background: color-mix(in oklab, var(--surface-2) 84%, transparent);
   backdrop-filter: blur(18px);

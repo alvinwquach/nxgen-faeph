@@ -59,6 +59,8 @@ const sites: Site[] = [
     caption: "Training services and tournaments",
     logo: basketballLogo.url,
     slogan: basketballSlogan,
+    // ponytail: vercel.app until basketball.faeph.com is detached from this project's redirect list
+    href: "https://basketball-six-tau.vercel.app",
     logoClassName: "site-logo-basketball",
   },
   {
@@ -66,6 +68,8 @@ const sites: Site[] = [
     caption: "Training services and tournaments",
     logo: volleyballLogo.url,
     slogan: volleyballSlogan,
+    // ponytail: vercel.app until volleyball.faeph.com is detached from this project's redirect list
+    href: "https://volleyball-green-gamma.vercel.app",
     logoClassName: "site-logo-volleyball",
   },
   {
@@ -75,10 +79,16 @@ const sites: Site[] = [
     href: "https://nxgen.faeph.com",
   },
   {
+    name: "F.A.E. Bookings",
+    caption: "Court rental • WiFi café • scheduling",
+    logo: "/fae-logo.png",
+    href: "https://bookings.faeph.com",
+  },
+  {
     name: "LinkMePH",
     caption: "Smart NFC cards • streaming • editing",
     logo: "/linkme-logo.png",
-    href: "https://linkme.faeph.com",
+    href: "https://linkmeio.faeph.com",
   },
 ];
 
@@ -97,7 +107,7 @@ const courtStatus = {
 };
 
 const stats = [
-  { value: 4, label: "Sites" },
+  { value: 5, label: "Sites" },
   { value: 2, label: "Sports" },
   { value: 1, label: "Community" },
 ];

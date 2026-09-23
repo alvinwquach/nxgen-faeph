@@ -21,7 +21,7 @@ export const oauth = {
         (typeof window !== "undefined" ? `${window.location.origin}/auth` : undefined);
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo },
+        options: redirectTo ? { redirectTo } : {},
       });
       if (error) return { error };
       // supabase-js navigates the browser to the provider; nothing after this runs.

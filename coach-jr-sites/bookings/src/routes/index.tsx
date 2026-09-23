@@ -5,7 +5,6 @@ import { Icon } from "@/components/fae/Icon";
 import { InView } from "@/components/fae/Motion";
 import { TiltCard } from "@/components/fae/TiltCard";
 import { MEMBERSHIP } from "@/lib/constants";
-import loungeHero from "@/assets/fae-gaming-lounge-hero.jpg";
 import nxgenLogo from "@/assets/partners/nxgen-logo.png.asset.json";
 import linkmeLogo from "@/assets/partners/linkme-logo.png.asset.json";
 import picklemaniaLogo from "@/assets/partners/sponsor-picklemania.png.asset.json";
@@ -98,7 +97,6 @@ function LandingPage() {
 function Hero() {
   return (
     <section className="relative flex min-h-[min(900px,100svh)] items-end overflow-hidden pt-24" aria-labelledby="home-title">
-      <img src={loungeHero} alt="" className="absolute inset-0 h-full w-full object-cover" aria-hidden="true" />
       <video
         className="absolute inset-0 z-[1] h-full w-full object-cover"
         src="/hero-bg.mp4"

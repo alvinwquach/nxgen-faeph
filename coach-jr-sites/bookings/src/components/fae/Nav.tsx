@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
 import { ButtonLink } from "./Button";
 import { Icon } from "./Icon";
@@ -18,6 +19,13 @@ export function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [progress, setProgress] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isStaff, setIsStaff] = useState(false);
+
+  // Read-only check (no claim): admins and desk staff both get the Operations link.
+  useEffect(() => {
+    if (!user) return setIsStaff(false);
+    supabase.rpc("has_staff_access", { _user_id: user.id }).then(({ data }) => setIsStaff(!!data));
+  }, [user]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -72,7 +80,8 @@ export function Nav() {
         </nav>
 
         <div className="nav-enter hidden items-center gap-2 lg:flex" style={{ animationDelay: "380ms" }}>
-          {user ? <ButtonLink to="/account" variant="ghost" size="sm"><Icon name="user" size={14} />{displayName}</ButtonLink> : null}
+          {isStaff ? <ButtonLink to="/admin-v2" variant="ghost" size="sm"><Icon name="chart" size={14} />Admin</ButtonLink> : null}
+          {user ? <ButtonLink to="/account" variant="ghost" size="sm"><Icon name="user" size={14} />{displayName}</ButtonLink> : <ButtonLink to="/auth" variant="ghost" size="sm">Sign in</ButtonLink>}
           <ButtonLink to="/schedule" variant="gold" size="sm">Book now</ButtonLink>
         </div>
 
@@ -116,7 +125,8 @@ export function Nav() {
               </button>
             ))}
           </nav>
-          <div className="flex gap-3 px-8 pb-10">
+          <div className="flex flex-wrap gap-3 px-8 pb-10">
+            {isStaff ? <ButtonLink to="/admin-v2" variant="ghost" className="w-full" onClick={() => setMenuOpen(false)}>Admin panel</ButtonLink> : null}
             {user ? <ButtonLink to="/account" variant="ghost" className="flex-1" onClick={() => setMenuOpen(false)}>{displayName}</ButtonLink> : <ButtonLink to="/auth" variant="ghost" className="flex-1" onClick={() => setMenuOpen(false)}>Sign in</ButtonLink>}
             <ButtonLink to="/schedule" variant="gold" className="flex-1" onClick={() => setMenuOpen(false)}>Book now</ButtonLink>
           </div>

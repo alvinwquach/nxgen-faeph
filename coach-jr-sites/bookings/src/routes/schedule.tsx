@@ -19,6 +19,8 @@ import { Button } from "@/components/fae/Button";
 import { Modal } from "@/components/fae/Modal";
 import { useAuth } from "@/components/fae/AuthProvider";
 import { useToast } from "@/components/fae/Toast";
+import { hoursFrom, venueNow, venueToday } from "@/lib/booking-utils";
+import { DurationField } from "@/components/fae/DurationField";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/schedule")({
@@ -66,7 +68,7 @@ type Draft = { sport: SportKey; courtId: string; courtName: string; date: string
 const DRAFT_KEY = "fae.scheduleDraft";
 
 function SchedulePage() {
-  const today = useMemo(() => new Date(), []);
+  const today = useMemo(() => venueToday(), []);
   const [dayOffset, setDayOffset] = useState(0);
   const [view, setView] = useState<"day" | "week">("day");
   const [sport, setSport] = useState<SportKey>("basketball");
@@ -154,6 +156,8 @@ function SchedulePage() {
     }
   }, [today, user]);
 
+  const [durationText, setDurationText] = useState("");
+
   const pick = (next: Draft) => {
     if (!user) {
       window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify(next));
@@ -161,6 +165,7 @@ function SchedulePage() {
       navigate({ to: "/auth", search: { returnTo: "/schedule" } });
       return;
     }
+    setDurationText("");
     setDraft(next);
   };
 
@@ -174,11 +179,11 @@ function SchedulePage() {
     : 0;
 
   const submit = async () => {
-    if (!draft || !user) return;
+    if (!draft || !user || !blockHours) return;
     setSubmitting(true);
     try {
       const result = await requestSlot({
-        data: { sport: draft.sport, courtId: draft.courtId, date: draft.date, startHour: draft.hour, hours: 1 },
+        data: { sport: draft.sport, courtId: draft.courtId, date: draft.date, startHour: draft.hour, hours: blockHours },
       });
       setConfirmation(result.booking.ref ?? "");
       setDraft(null);
@@ -205,11 +210,17 @@ function SchedulePage() {
 
   const cellFor = (courtId: string, day: string, hour: number) => {
     const slot = slotMap.get(`${courtId}|${day}|${hour}`);
-    const now = new Date();
-    const past = day === toDateStr(now) && hour <= now.getHours();
+    const venue = venueNow();
+    const past = day === venue.iso && hour <= venue.hour;
     const state: SlotState = slot ? slot.state : "open";
     return { slot, state, past, selectable: !slot && !past };
   };
+
+  // Optional typed duration (default 1 hr): every hour in the block must be open on this court.
+  const block = draft
+    ? hoursFrom(draft.hour, Number(durationText || 1), (h) => hours.includes(h) && cellFor(draft.courtId, draft.date, h).selectable)
+    : [];
+  const blockHours = typeof block === "string" ? 0 : block.length;
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-background pt-20">
@@ -375,11 +386,14 @@ function SchedulePage() {
       <Modal
         open={!!draft}
         onClose={() => setDraft(null)}
-        title="Request this hour"
-        subtitle={draft ? `${draft.courtName} · ${formatHour(draft.hour)}–${formatHour(draft.hour + 1)}` : undefined}
+        title={blockHours > 1 ? `Request ${blockHours} hours` : "Request this hour"}
+        subtitle={draft ? `${draft.courtName} · ${formatHour(draft.hour)}–${formatHour(draft.hour + Math.max(blockHours, 1))}` : undefined}
       >
         {draft ? (
           <div>
+            <div className="mb-4">
+              <DurationField id="schedule-duration" value={durationText} onChange={setDurationText} error={typeof block === "string" ? block : null} />
+            </div>
             <dl className="space-y-3 border-y border-border py-5 text-sm">
               <div className="flex justify-between gap-4">
                 <dt className="text-muted-foreground">Date</dt>
@@ -398,8 +412,8 @@ function SchedulePage() {
               Staff review your request. Once approved you get a short window to pay the deposit before the hour returns to open.
             </p>
             <div className="mt-6 flex items-center justify-between gap-4">
-              <strong className="text-2xl text-gold">{formatPeso(rate)}</strong>
-              <Button onClick={() => void submit()} disabled={submitting || authLoading}>
+              <strong className="text-2xl text-gold">{formatPeso(rate * Math.max(blockHours, 1))}</strong>
+              <Button onClick={() => void submit()} disabled={submitting || authLoading || !blockHours}>
                 {submitting ? "Sending…" : "Send request"}
               </Button>
             </div>

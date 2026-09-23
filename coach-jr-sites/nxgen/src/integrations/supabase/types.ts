@@ -1608,6 +1608,11 @@ export type Database = {
           profile_id: string
         }[]
       }
+      get_kotc_pool: { Args: never; Returns: string[] }
+      get_leaderboard_totals: {
+        Args: never
+        Returns: Database["public"]["Views"]["leaderboard_totals"]["Row"][]
+      }
       get_public_player: {
         Args: { _id: string }
         Returns: {

@@ -15,9 +15,9 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BookRouteImport } from './routes/book'
 import { Route as LocationRouteImport } from './routes/location'
 import { Route as ScheduleRouteImport } from './routes/schedule'
-import { Route as StationsRouteImport } from './routes/stations'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAdminV2RouteImport } from './routes/_authenticated/admin-v2'
 import { Route as ApiPublicBookingEmailsRouteImport } from './routes/api/public/booking-emails'
 
 const IndexRoute = IndexRouteImport.update({
@@ -49,11 +49,6 @@ const ScheduleRoute = ScheduleRouteImport.update({
   path: '/schedule',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StationsRoute = StationsRouteImport.update({
-  id: '/stations',
-  path: '/stations',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthenticatedAccountRoute = AuthenticatedAccountRouteImport.update({
   id: '/account',
   path: '/account',
@@ -62,6 +57,11 @@ const AuthenticatedAccountRoute = AuthenticatedAccountRouteImport.update({
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAdminV2Route = AuthenticatedAdminV2RouteImport.update({
+  id: '/admin-v2',
+  path: '/admin-v2',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const ApiPublicBookingEmailsRoute = ApiPublicBookingEmailsRouteImport.update({
@@ -76,9 +76,9 @@ export interface FileRoutesByFullPath {
   '/book': typeof BookRoute
   '/location': typeof LocationRoute
   '/schedule': typeof ScheduleRoute
-  '/stations': typeof StationsRoute
   '/account': typeof AuthenticatedAccountRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/admin-v2': typeof AuthenticatedAdminV2Route
   '/api/public/booking-emails': typeof ApiPublicBookingEmailsRoute
 }
 export interface FileRoutesByTo {
@@ -87,9 +87,9 @@ export interface FileRoutesByTo {
   '/book': typeof BookRoute
   '/location': typeof LocationRoute
   '/schedule': typeof ScheduleRoute
-  '/stations': typeof StationsRoute
   '/account': typeof AuthenticatedAccountRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/admin-v2': typeof AuthenticatedAdminV2Route
   '/api/public/booking-emails': typeof ApiPublicBookingEmailsRoute
 }
 export interface FileRoutesById {
@@ -100,9 +100,9 @@ export interface FileRoutesById {
   '/book': typeof BookRoute
   '/location': typeof LocationRoute
   '/schedule': typeof ScheduleRoute
-  '/stations': typeof StationsRoute
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/admin-v2': typeof AuthenticatedAdminV2Route
   '/api/public/booking-emails': typeof ApiPublicBookingEmailsRoute
 }
 export interface FileRouteTypes {
@@ -113,9 +113,9 @@ export interface FileRouteTypes {
     | '/book'
     | '/location'
     | '/schedule'
-    | '/stations'
     | '/account'
     | '/admin'
+    | '/admin-v2'
     | '/api/public/booking-emails'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -124,9 +124,9 @@ export interface FileRouteTypes {
     | '/book'
     | '/location'
     | '/schedule'
-    | '/stations'
     | '/account'
     | '/admin'
+    | '/admin-v2'
     | '/api/public/booking-emails'
   id:
     | '__root__'
@@ -136,9 +136,9 @@ export interface FileRouteTypes {
     | '/book'
     | '/location'
     | '/schedule'
-    | '/stations'
     | '/_authenticated/account'
     | '/_authenticated/admin'
+    | '/_authenticated/admin-v2'
     | '/api/public/booking-emails'
   fileRoutesById: FileRoutesById
 }
@@ -149,7 +149,6 @@ export interface RootRouteChildren {
   BookRoute: typeof BookRoute
   LocationRoute: typeof LocationRoute
   ScheduleRoute: typeof ScheduleRoute
-  StationsRoute: typeof StationsRoute
   ApiPublicBookingEmailsRoute: typeof ApiPublicBookingEmailsRoute
 }
 
@@ -197,13 +196,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ScheduleRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/stations': {
-      id: '/stations'
-      path: '/stations'
-      fullPath: '/stations'
-      preLoaderRoute: typeof StationsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authenticated/account': {
       id: '/_authenticated/account'
       path: '/account'
@@ -216,6 +208,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin-v2': {
+      id: '/_authenticated/admin-v2'
+      path: '/admin-v2'
+      fullPath: '/admin-v2'
+      preLoaderRoute: typeof AuthenticatedAdminV2RouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/public/booking-emails': {
@@ -231,11 +230,13 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountRoute: typeof AuthenticatedAccountRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAdminV2Route: typeof AuthenticatedAdminV2Route
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountRoute: AuthenticatedAccountRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAdminV2Route: AuthenticatedAdminV2Route,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -248,7 +249,6 @@ const rootRouteChildren: RootRouteChildren = {
   BookRoute: BookRoute,
   LocationRoute: LocationRoute,
   ScheduleRoute: ScheduleRoute,
-  StationsRoute: StationsRoute,
   ApiPublicBookingEmailsRoute: ApiPublicBookingEmailsRoute,
 }
 export const routeTree = rootRouteImport

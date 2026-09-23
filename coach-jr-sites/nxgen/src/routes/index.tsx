@@ -158,7 +158,7 @@ function useLiveLeague() {
     (async () => {
       const [, b, t] = await Promise.all([
         loadGames(),
-        supabase.from("leaderboard_totals").select("*"),
+        supabase.rpc("get_leaderboard_totals"),
         supabase.from("teams").select("id", { count: "exact", head: true }),
       ]);
       if (cancelled) return;

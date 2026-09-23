@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "./AuthProvider";
 import { Button } from "./Button";
 import { Icon } from "./Icon";
-import { HourWheel } from "./HourWheel";
+import { HourGrid, MAX_HOURS, rangeHours, type HourRange } from "./HourGrid";
 import { Modal } from "./Modal";
 import { useToast } from "./Toast";
 import {
@@ -24,14 +24,11 @@ import {
   getMyProfile,
 } from "@/lib/fae.functions";
 import { getVenueSettings, requestSlot } from "@/lib/schedule.functions";
+import { venueNow } from "@/lib/booking-utils";
 import { cn } from "@/lib/utils";
 
 const DRAFT_KEY = "fae.bookingDraft";
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-function toIso(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
 
 export function HomeBooking() {
   const { user, loading } = useAuth();
@@ -40,8 +37,8 @@ export function HomeBooking() {
   const { toast } = useToast();
   const [sport, setSport] = useState<SportKey>("basketball");
   const [courtId, setCourtId] = useState(SPORTS.basketball.courts[0]?.id ?? "bb-full");
-  const [date, setDate] = useState(() => toIso(new Date()));
-  const [selectedHour, setSelectedHour] = useState<number | null>(null);
+  const [date, setDate] = useState(() => venueNow().iso);
+  const [range, setRange] = useState<HourRange>(null);
   const [submitting, setSubmitting] = useState(false);
   const [confirmation, setConfirmation] = useState<{ ref: string; startHour: number; hours: number; amount: number }[] | null>(null);
 
@@ -58,14 +55,14 @@ export function HomeBooking() {
   });
 
   const days = useMemo(() => {
-    const now = new Date();
+    const { y, m, d } = venueNow();
     return Array.from({ length: 7 }, (_, i) => {
-      const value = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
-      return { iso: toIso(value), day: value.getDate(), weekday: i === 0 ? "Today" : WEEKDAYS[value.getDay()] };
+      const value = new Date(Date.UTC(y, m - 1, d + i));
+      return { iso: value.toISOString().slice(0, 10), day: value.getUTCDate(), weekday: i === 0 ? "Today" : WEEKDAYS[value.getUTCDay()] };
     });
   }, []);
   const taken = useMemo(() => new Set(availability?.taken ?? []), [availability]);
-  const hours = useMemo(() => selectedHour === null ? [] : [selectedHour], [selectedHour]);
+  const hours = useMemo(() => rangeHours(range), [range]);
   const member = isMember(profile?.member?.tier);
   const court = SPORTS[sport].courts.find((item) => item.id === courtId) ?? SPORTS[sport].courts[0];
   const rate = useMemo(() => {
@@ -88,8 +85,9 @@ export function HomeBooking() {
     (sum, hour) => sum + Math.round(rate * (PEAK.enabled && hour >= PEAK.start ? 1 + PEAK.uplift : 1)),
     0,
   );
-  const isToday = date === toIso(new Date());
-  const nowHour = new Date().getHours();
+  const venue = venueNow();
+  const isToday = date === venue.iso;
+  const nowHour = venue.hour;
   const openHours = useMemo(() => {
     const start = settings?.openStart ?? HOURS[0] ?? 6;
     const end = settings?.openEnd ?? 23;
@@ -113,11 +111,11 @@ export function HomeBooking() {
     if (!firstCourt) return;
     setSport(key);
     setCourtId(firstCourt.id);
-    setSelectedHour(null);
+    setRange(null);
   };
 
   const reserve = async () => {
-    if (selectedHour === null) return;
+    if (!range) return;
     if (!user) {
       toast("Sign in to reserve — your selected hour is saved.");
       navigate({ to: "/auth", search: { returnTo: "/schedule" } });
@@ -126,7 +124,7 @@ export function HomeBooking() {
     setSubmitting(true);
     try {
       await ensureMemberProfile({ data: {} });
-      const result = await requestSlot({ data: { sport, courtId, date, startHour: selectedHour, hours: 1 } });
+      const result = await requestSlot({ data: { sport, courtId, date, startHour: range.start, hours: hours.length } });
       setConfirmation([
         {
           ref: result.booking.ref ?? "",
@@ -135,7 +133,7 @@ export function HomeBooking() {
           amount: Number(result.booking.amount),
         },
       ]);
-      setSelectedHour(null);
+      setRange(null);
       window.sessionStorage.removeItem(DRAFT_KEY);
       await queryClient.invalidateQueries({ queryKey: ["availability"] });
       await queryClient.invalidateQueries({ queryKey: ["slot-states"] });
@@ -178,7 +176,7 @@ export function HomeBooking() {
                   variant={courtId === item.id ? "gold" : "ghost"}
                   onClick={() => {
                     setCourtId(item.id);
-                    setSelectedHour(null);
+                    setRange(null);
                   }}
                 >
                   {item.name}
@@ -194,7 +192,7 @@ export function HomeBooking() {
                 type="button"
                 onClick={() => {
                   setDate(day.iso);
-                  setSelectedHour(null);
+                  setRange(null);
                 }}
                 className={cn(
                   "w-[68px] shrink-0 rounded-xl border px-2 py-3 text-center transition-colors",
@@ -208,13 +206,14 @@ export function HomeBooking() {
           </div>
 
           <div className="mt-6">
-            <p className="mb-3 text-center text-[10px] font-semibold uppercase text-muted-foreground">Scroll to choose one hour</p>
-            <HourWheel
-              hours={openHours}
-              selected={selectedHour}
-              unavailable={unavailableHours}
-              onSelect={setSelectedHour}
-            />
+            <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+              <p className="text-sm font-semibold text-foreground">Tap a start hour, then an end hour, or type how long</p>
+              <p className="text-[11px] text-muted-foreground">Up to {MAX_HOURS} hrs{PEAK.enabled ? <> · <span className="text-gold">●</span> peak rate</> : null}</p>
+            </div>
+            <HourGrid key={`${courtId}-${date}`} hours={openHours} unavailable={unavailableHours} range={range} onChange={setRange} />
+            <p aria-live="polite" className="mt-4 text-center text-xs text-muted-foreground">
+              {range ? `${formatHour(range.start)} – ${formatHour(range.end + 1)} · ${hours.length} hr${hours.length > 1 ? "s" : ""} selected` : "No hours selected yet"}
+            </p>
           </div>
         </div>
 
@@ -225,7 +224,7 @@ export function HomeBooking() {
             <p className="mt-1 text-sm text-muted-foreground">{court?.name}</p>
             <dl className="mt-8 space-y-4 border-y border-border py-5 text-sm">
               <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Date</dt><dd>{new Date(`${date}T00:00:00`).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}</dd></div>
-              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Hours</dt><dd>{hours.length || "—"}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Hours</dt><dd>{range ? `${formatHour(range.start)}–${formatHour(range.end + 1)} (${hours.length})` : "—"}</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Your live rate</dt><dd>{formatPeso(rate)}/hr</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Member rate</dt><dd className="text-gold">{formatPeso(memberRate)}/hr</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Non-member rate</dt><dd>{formatPeso(nonMemberRate)}/hr</dd></div>
@@ -237,7 +236,7 @@ export function HomeBooking() {
               <strong className="text-3xl font-bold text-gold">{formatPeso(total)}</strong>
             </div>
             <Button className="w-full" onClick={reserve} disabled={!hours.length || submitting || loading}>
-              {submitting ? "Sending…" : user ? "Request this hour" : "Sign in & continue"}
+              {submitting ? "Sending…" : user ? (hours.length > 1 ? `Request ${hours.length} hours` : "Request this hour") : "Sign in & continue"}
               <Icon name="arrow-right" size={16} />
             </Button>
             <p className="mt-3 text-center text-[11px] leading-relaxed text-muted-foreground">Live availability · protected against double-booking</p>
