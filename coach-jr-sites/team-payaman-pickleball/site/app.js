@@ -1,7 +1,22 @@
 // Playhouse Pickle demo: public site + player portal. All data is local and simulated.
 const $ = s => document.querySelector(s);
-const S = { user: null, admin: false, pay: null, sel: { day: 0, court: 0, hour: null } };
-const RATE = 300, UNLOCK = 99, DAY = 864e5, NOW = Date.now();
+const S = { user: null, admin: false, pay: null, sel: { day: 0, court: 0, hours: [] }, taken: new Set() };
+const DAY = 864e5, NOW = Date.now();
+
+// Owner-editable settings (console > Configuration).
+// ponytail: saved per browser in this demo; the real build keeps them in the database so every visitor sees them.
+const PRICES = { court: 300, open: 250, unlock: 99, w1: 49, w2: 99, w3: 299 };
+const HOURS = { open: 6, close: 23, playFrom: 13, playTo: 21 };
+const PRICE_DEFAULT = { ...PRICES }, HOURS_DEFAULT = { ...HOURS }, SITE = {}, CFG_DEFAULT = {};
+try { const c = JSON.parse(localStorage.getItem('pp-config') || '{}'); Object.assign(PRICES, c.prices); Object.assign(HOURS, c.hours); Object.assign(SITE, c.site); } catch (e) {}
+function saveConfig() { try { localStorage.setItem('pp-config', JSON.stringify({ prices: PRICES, hours: HOURS, site: SITE })); } catch (e) {} }
+const openHours = () => [...Array(Math.max(0, HOURS.close - HOURS.open))].map((_, i) => i + HOURS.open);
+function applyConfig() { // defaults are read from the page itself the first time
+  document.querySelectorAll('[data-cfg]').forEach(el => { const k = el.dataset.cfg; if (!(k in CFG_DEFAULT)) CFG_DEFAULT[k] = el.textContent; el.textContent = SITE[k] ?? CFG_DEFAULT[k]; });
+  document.querySelectorAll('[data-cfg-href]').forEach(el => { const k = el.dataset.cfgHref; if (!(k in CFG_DEFAULT)) CFG_DEFAULT[k] = el.getAttribute('href'); el.setAttribute('href', SITE[k] ?? CFG_DEFAULT[k]); });
+  document.querySelectorAll('[data-price]').forEach(el => { el.textContent = peso(PRICES[el.dataset.price]); });
+}
+function refreshSite() { renderBooker(); renderMatches(); renderWifi('#wifiPortal'); renderWifi('#wifiPublic'); applyConfig(); }
 const peso = n => '₱' + n.toLocaleString('en-PH');
 const EMAIL = /^[^ @]+@[^ @]+[.][^ @]{2,}$/;
 
@@ -13,7 +28,7 @@ const OWNERS = [
   { n: 'Dudut Lang', real: 'Jaime Marino de Guzman', line: 'Co-owner · "Passion with a purpose"', img: 'https://yt3.googleusercontent.com/ytc/AIdro_lo2FoV8ZdLB3tfz4Ded-zLcWfkAtFoEDh0t3M0sLnIeQ=s900-c-k-c0x00ffffff-no-rj', crop: [-22, 0, 122] }
 ];
 const TAGS = ['Your pickleball playground', '#pickleball', '#bacoorcavite', '#playhousepickleballco', '@playhousepickleco', '#TeamPayaman'];
-const WIFI = [{ n: '1 Hour', p: 49, note: 'Quick session' }, { n: '1 Day', p: 99, note: 'All-day access' }, { n: '1 Week', p: 299, note: 'Best value' }];
+const WIFI = [{ n: '1 Hour', k: 'w1', note: 'Quick session' }, { n: '1 Day', k: 'w2', note: 'All-day access' }, { n: '1 Week', k: 'w3', note: 'Best value' }];
 const MATCHES = [
   { id: 'PC-1041', t: 'Doubles vs. Team Payaman', court: 'Court 1', date: 'Sep 20', mins: 94, clips: 14, locked: false, exp: NOW + 26 * DAY },
   { id: 'PC-1039', t: 'Open play, evening session', court: 'Court 3', date: 'Sep 18', mins: 118, clips: 21, locked: true, exp: NOW + 1.3 * DAY },
@@ -33,7 +48,11 @@ function closeDlgs() { document.querySelectorAll('dialog[open]').forEach(d => d.
 function qr(data) { return 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=0&data=' + encodeURIComponent(data); }
 function showQR(title, sub, data) { $('#qrTitle').textContent = title; $('#qrSub').textContent = sub; $('#qrImg').src = qr(data); openDlg('dlgQR'); }
 function toggleSwitch(b) { const on = b.getAttribute('aria-checked') !== 'true'; b.setAttribute('aria-checked', on); b.classList.toggle('bg-lime', on); b.classList.toggle('bg-white/15', !on); b.firstElementChild.style.transform = on ? 'translateX(20px)' : 'translateX(0)'; }
-function hourLabel(h) { const s = h < 12 ? 'AM' : 'PM', x = h % 12 || 12; return x + ':00 ' + s; }
+function hourLabel(h) { const s = h % 24 < 12 ? 'AM' : 'PM', x = h % 12 || 12; return x + ':00 ' + s; }
+function hourRanges(hrs) { // [8,9,10,14] -> "8:00 AM to 11:00 AM, 2:00 PM to 3:00 PM"
+  const out = []; hrs.forEach(h => { const r = out[out.length - 1]; if (r && r[1] === h) r[1] = h + 1; else out.push([h, h + 1]); });
+  return out.map(([a, b]) => hourLabel(a) + ' to ' + hourLabel(b)).join(', ');
+}
 function countdown(ms) { if (ms <= 0) return 'Expired'; const d = Math.floor(ms / DAY), h = Math.floor(ms % DAY / 36e5), m = Math.floor(ms % 36e5 / 6e4), s = Math.floor(ms % 6e4 / 1e3); return (d ? d + 'd ' : '') + String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0'); }
 const courtLines = '<svg class="court-lines" viewBox="0 0 400 150" preserveAspectRatio="none"><g fill="none" stroke="#DDE01D" stroke-width="2"><rect x="20" y="15" width="360" height="120"/><path d="M200 15v120M20 75h360" stroke-dasharray="6 6"/><path d="M130 15v120M270 15v120"/></g></svg>';
 
@@ -70,41 +89,45 @@ function guestSend() {
 }
 
 // ---------- booking widget ----------
-function isBooked(d, c, h) { return (d * 7 + c * 13 + h * 5) % 9 < 3; }
-function isOpenPlay(c, h) { return c === 2 && h >= 13 && h < 21; }
+function isBooked(d, c, h) { return S.taken.has(d + '-' + c + '-' + h) || (d * 7 + c * 13 + h * 5) % 9 < 3; }
+function isOpenPlay(c, h) { return c === 2 && h >= HOURS.playFrom && h < HOURS.playTo; }
 function renderBooker() {
   const days = [...Array(7)].map((_, i) => { const d = new Date(NOW + i * DAY); return i === 0 ? 'Today' : d.toLocaleDateString('en-PH', { weekday: 'short', day: 'numeric' }); });
-  $('#dayChips').innerHTML = days.map((l, i) => `<button class="chip text-sm" aria-pressed="${i === S.sel.day}" onclick="S.sel.day=${i};S.sel.hour=null;renderBooker()">${l}</button>`).join('');
-  $('#courtChips').innerHTML = [0, 1, 2].map(c => `<button class="chip flex-1 text-sm font-semibold" aria-pressed="${c === S.sel.court}" onclick="S.sel.court=${c};S.sel.hour=null;renderBooker()">Court ${c + 1}</button>`).join('');
-  const hrs = [...Array(17)].map((_, i) => i + 6);
-  $('#slotGrid').innerHTML = hrs.map(h => {
+  $('#dayChips').innerHTML = days.map((l, i) => `<button class="chip text-sm" aria-pressed="${i === S.sel.day}" onclick="S.sel.day=${i};S.sel.hours=[];renderBooker()">${l}</button>`).join('');
+  $('#courtChips').innerHTML = [0, 1, 2].map(c => `<button class="chip flex-1 text-sm font-semibold" aria-pressed="${c === S.sel.court}" onclick="S.sel.court=${c};S.sel.hours=[];renderBooker()">Court ${c + 1}</button>`).join('');
+  $('#slotGrid').innerHTML = openHours().map(h => {
     const d = S.sel.day, c = S.sel.court;
     if (isOpenPlay(c, h)) return `<div class="cell text-center text-muted" style="cursor:default">${hourLabel(h)}<br><span class="text-[10px] text-lime">Open play</span></div>`;
     if (isBooked(d, c, h)) return `<div class="cell text-center text-slate-600 line-through" style="cursor:default">${hourLabel(h)}</div>`;
-    const on = S.sel.hour === h;
-    return `<button class="cell open text-center ${on ? 'booked' : ''}" aria-pressed="${on}" onclick="S.sel.hour=${h};renderBooker()"><span class="font-semibold">${hourLabel(h)}</span></button>`;
+    const on = S.sel.hours.includes(h);
+    return `<button class="cell open text-center ${on ? 'booked' : ''}" aria-pressed="${on}" onclick="toggleHour(${h})"><span class="font-semibold">${hourLabel(h)}</span></button>`;
   }).join('');
-  const b = $('#bookBtn'), h = S.sel.hour;
-  b.disabled = h == null; b.style.opacity = h == null ? .45 : 1;
-  $('#bookSummary').innerHTML = h == null ? 'Choose an open hour.' : `<b>Court ${S.sel.court + 1}</b> · ${days[S.sel.day]} · ${hourLabel(h)} to ${hourLabel(h + 1)} · <b class="text-lime">${peso(RATE)}</b>`;
+  const b = $('#bookBtn'), hs = S.sel.hours, n = hs.length;
+  S.sel.dayLabel = days[S.sel.day];
+  b.disabled = !n; b.style.opacity = n ? 1 : .45;
+  $('#bookSummary').innerHTML = !n ? 'Tap one or more open hours.' : `<b>Court ${S.sel.court + 1}</b> · ${days[S.sel.day]} · ${hourRanges(hs)} · ${n} hour${n > 1 ? 's' : ''} × ${peso(PRICES.court)} = <b class="text-lime">${peso(n * PRICES.court)}</b>`;
 }
+function toggleHour(h) { const hs = S.sel.hours, i = hs.indexOf(h); if (i < 0) hs.push(h); else hs.splice(i, 1); hs.sort((a, b) => a - b); renderBooker(); }
 function startBooking() {
-  if (S.sel.hour == null) return;
-  S.pay = { kind: 'book', amt: RATE, label: `Court ${S.sel.court + 1} · ${hourLabel(S.sel.hour)}` };
-  $('#payTitle').textContent = 'Confirm booking'; $('#payDesc').textContent = S.pay.label + '. Includes a Your Brand recording.';
-  $('#payAmt').textContent = peso(RATE); openDlg('dlgPay');
+  const hs = S.sel.hours; if (!hs.length) return;
+  S.pay = { kind: 'book', amt: hs.length * PRICES.court, day: S.sel.day, court: S.sel.court, hours: [...hs], label: `Court ${S.sel.court + 1} · ${S.sel.dayLabel}, ${hourRanges(hs)}` };
+  $('#payTitle').textContent = 'Confirm booking'; $('#payDesc').textContent = `${S.pay.label}. ${hs.length} hour${hs.length > 1 ? 's' : ''} at ${peso(PRICES.court)} per hour, each recorded by Your Brand.`;
+  $('#payAmt').textContent = peso(S.pay.amt); openDlg('dlgPay');
 }
 
 // ---------- payments (simulated) ----------
 function pay(method) {
   const p = S.pay; closeDlgs(); if (!p) return;
   if (typeof DB !== 'undefined') DB.payments.unshift({ ref: 'PP' + String(Date.now()).slice(-6), what: p.label, method, amt: p.amt, st: 'Pending' });
-  if (p.kind === 'book') { MY_BOOKINGS.unshift({ what: p.label.split(' · ')[0], when: p.label.split(' · ')[1], st: 'Upcoming' }); S.sel.hour = null; renderBooker(); renderMyBookings(); toast('Booked via ' + method + '. See you on court'); }
+  if (p.kind === 'book') {
+    p.hours.forEach(h => { S.taken.add(p.day + '-' + p.court + '-' + h); if (p.day === 0 && typeof DB !== 'undefined') DB.schedule[p.court + '-' + h] = { who: S.user ? S.user.name : 'Online booking', st: 'Booked' }; });
+    MY_BOOKINGS.unshift({ what: p.label.split(' · ')[0], when: p.label.split(' · ')[1], st: 'Upcoming' }); S.sel.hours = []; renderBooker(); renderMyBookings(); toast('Booked via ' + method + '. See you on court');
+  }
   if (p.kind === 'unlock') { const m = MATCHES.find(x => x.id === p.id); m.locked = false; renderMatches(); toast('Unlocked via ' + method + '. Yours to keep'); }
   if (p.kind === 'wifi') showQR('WiFi voucher ready', p.label + ' · connect at the venue', 'PLAYHOUSE-WIFI-' + Date.now());
 }
-function buyWifi(i) { const w = WIFI[i]; S.pay = { kind: 'wifi', amt: w.p, label: w.n + ' WiFi pass' }; $('#payTitle').textContent = 'Buy ' + w.n + ' WiFi'; $('#payDesc').textContent = 'Voucher QR appears right after payment.'; $('#payAmt').textContent = peso(w.p); openDlg('dlgPay'); }
-function unlock(id) { const m = MATCHES.find(x => x.id === id); S.pay = { kind: 'unlock', id, amt: UNLOCK, label: 'Keep ' + m.id + ' forever' }; $('#payTitle').textContent = 'Keep this match forever'; $('#payDesc').textContent = m.t + '. Full game plus ' + m.clips + ' highlight clips, no expiry, HD download.'; $('#payAmt').textContent = peso(UNLOCK); openDlg('dlgPay'); }
+function buyWifi(i) { const w = WIFI[i]; S.pay = { kind: 'wifi', amt: PRICES[w.k], label: w.n + ' WiFi pass' }; $('#payTitle').textContent = 'Buy ' + w.n + ' WiFi'; $('#payDesc').textContent = 'Voucher QR appears right after payment.'; $('#payAmt').textContent = peso(PRICES[w.k]); openDlg('dlgPay'); }
+function unlock(id) { const m = MATCHES.find(x => x.id === id); S.pay = { kind: 'unlock', id, amt: PRICES.unlock, label: 'Keep ' + m.id + ' forever' }; $('#payTitle').textContent = 'Keep this match forever'; $('#payDesc').textContent = m.t + '. Full game plus ' + m.clips + ' highlight clips, no expiry, HD download.'; $('#payAmt').textContent = peso(PRICES.unlock); openDlg('dlgPay'); }
 
 // ---------- portal ----------
 function pTab(n) {
@@ -123,7 +146,7 @@ function renderMatches() {
         <div class="flex flex-wrap gap-2 mt-4">
           <button class="btn btn-ghost !py-2 !px-3 text-sm" onclick="showQR('Full game ${m.id}','Scan to watch on your phone','${location.origin}/?watch=game/${m.id}')"><i class="fa-solid fa-film"></i>Full game</button>
           <button class="btn btn-ghost !py-2 !px-3 text-sm" onclick="showQR('Highlights ${m.id}','${m.clips} clips, ready to post','${location.origin}/?watch=reel/${m.id}')"><i class="fa-solid fa-wand-magic-sparkles"></i>Highlights</button>
-          ${m.locked ? `<button class="btn btn-lime !py-2 !px-3 text-sm ml-auto" onclick="unlock('${m.id}')">Keep forever ${peso(UNLOCK)}</button>`
+          ${m.locked ? `<button class="btn btn-lime !py-2 !px-3 text-sm ml-auto" onclick="unlock('${m.id}')">Keep forever ${peso(PRICES.unlock)}</button>`
                      : `<button class="btn btn-lime !py-2 !px-3 text-sm ml-auto" onclick="showQR('Download ${m.id}','HD download link','${location.origin}/?watch=dl/${m.id}')"><i class="fa-solid fa-download"></i>Download</button>`}
         </div>
       </div>
@@ -132,13 +155,13 @@ function renderMatches() {
   $('#pExpiring').textContent = MATCHES.filter(m => m.locked && m.exp - Date.now() < 5 * DAY).length;
 }
 function renderMyBookings() { $('#myBookings').innerHTML = MY_BOOKINGS.map(b => `<div class="card p-4 flex justify-between items-center"><div><p class="font-bold">${b.what}</p><p class="text-xs text-muted">${b.when}</p></div><span class="badge ${b.st === 'Completed' ? 'b-mute' : 'b-lime'}">${b.st}</span></div>`).join(''); }
-function renderWifi(el) { $(el).innerHTML = WIFI.map((w, i) => `<div class="card p-6 text-center lift relative">${i === 2 ? '<span class="absolute -top-3 left-1/2 -translate-x-1/2 badge b-gold bg-black">Best value</span>' : ''}<p class="font-bold text-lg">${w.n}</p><p class="display text-4xl text-lime my-3 num">${peso(w.p)}</p><p class="text-xs text-muted mb-5">${w.note}</p><button class="btn btn-lime w-full justify-center" onclick="buyWifi(${i})">Buy pass</button></div>`).join(''); }
+function renderWifi(el) { $(el).innerHTML = WIFI.map((w, i) => `<div class="card p-6 text-center lift relative">${i === 2 ? '<span class="absolute -top-3 left-1/2 -translate-x-1/2 badge b-gold bg-black">Best value</span>' : ''}<p class="font-bold text-lg" data-cfg="WiFi · Plan ${i + 1} name">${w.n}</p><p class="display text-4xl text-lime my-3 num">${peso(PRICES[w.k])}</p><p class="text-xs text-muted mb-5" data-cfg="WiFi · Plan ${i + 1} note">${w.note}</p><button class="btn btn-lime w-full justify-center" onclick="buyWifi(${i})">Buy pass</button></div>`).join(''); }
 setInterval(() => document.querySelectorAll('[data-exp]').forEach(el => el.textContent = countdown(+el.dataset.exp - Date.now())), 1000);
 
 // ---------- home sections ----------
 function renderHome() {
-  $('#ownerGrid').innerHTML = OWNERS.map(o => `<figure class="founder reveal"><div class="frame"><img src="${o.img}" alt="${o.n}" loading="lazy" referrerpolicy="no-referrer" style="left:${o.crop[0]}%;top:${o.crop[1]}%;width:${o.crop[2]}%"></div><figcaption class="mt-4"><p class="font-bold text-lg">${o.n}</p><p class="text-xs text-lime font-semibold">${o.real}</p><p class="text-xs text-muted mt-1">${o.line}</p></figcaption></figure>`).join('');
-  const row = TAGS.map(t => `<span class="${t.startsWith('#') || t.startsWith('@') ? '' : 'text-lime'}">${t}</span>`).join('');
+  $('#ownerGrid').innerHTML = OWNERS.map((o, i) => `<figure class="founder reveal"><div class="frame"><img src="${o.img}" alt="${o.n}" loading="lazy" referrerpolicy="no-referrer" style="left:${o.crop[0]}%;top:${o.crop[1]}%;width:${o.crop[2]}%"></div><figcaption class="mt-4"><p class="font-bold text-lg" data-cfg="Owners · Owner ${i + 1} name">${o.n}</p><p class="text-xs text-lime font-semibold" data-cfg="Owners · Owner ${i + 1} full name">${o.real}</p><p class="text-xs text-muted mt-1" data-cfg="Owners · Owner ${i + 1} role">${o.line}</p></figcaption></figure>`).join('');
+  const row = TAGS.map((t, i) => `<span class="${t.startsWith('#') || t.startsWith('@') ? '' : 'text-lime'}" data-cfg="Hashtags · Tag ${i + 1}">${t}</span>`).join('');
   $('#mq').innerHTML = row + row;
 }
 
@@ -164,5 +187,5 @@ function initMotion() {
 }
 
 // ---------- boot ----------
-renderHome(); renderBooker(); renderMatches(); renderMyBookings(); renderWifi('#wifiPortal'); renderWifi('#wifiPublic');
+renderHome(); renderMyBookings(); refreshSite();
 initMotion(); // deferred script: DOM is parsed and GSAP already loaded

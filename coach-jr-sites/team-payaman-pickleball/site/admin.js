@@ -27,10 +27,10 @@ const DB = {
   ],
   vouchers: [{ code: 'PH-WF-3381', plan: '1 Day', who: 'Walk-in', st: 'Active' }, { code: 'PH-WF-3375', plan: '1 Hour', who: 'Kyla M.', st: 'Used' }],
   sent: [{ name: 'Open play tonight', aud: 214, when: 'Yesterday 3:10 PM' }],
-  prices: { court: 300, open: 250, unlock: 99, w1: 49, w2: 99, w3: 299 },
+  prices: PRICES, // shared with the public site (app.js)
   staff: [{ n: 'jhoopin3@gmail.com', role: 'Owner (admin)' }, { n: 'filamelitebasketball', role: 'Owner (admin)' }, { n: 'Front desk 1', role: 'Staff' }, { n: 'Court marshal', role: 'Staff' }]
 };
-const SECTIONS = [['overview', 'Overview', 'fa-gauge-high'], ['schedule', 'Schedule', 'fa-calendar-days'], ['customers', 'Customers', 'fa-users'], ['picklecam', 'Your Brand', 'fa-video'], ['payments', 'Payments', 'fa-peso-sign'], ['wifi', 'WiFi', 'fa-wifi'], ['data', 'Data & platform', 'fa-database'], ['marketing', 'Marketing', 'fa-paper-plane'], ['settings', 'Settings', 'fa-sliders']];
+const SECTIONS = [['overview', 'Overview', 'fa-gauge-high'], ['schedule', 'Schedule', 'fa-calendar-days'], ['customers', 'Customers', 'fa-users'], ['picklecam', 'Your Brand', 'fa-video'], ['payments', 'Payments', 'fa-peso-sign'], ['wifi', 'WiFi', 'fa-wifi'], ['data', 'Data & platform', 'fa-database'], ['marketing', 'Marketing', 'fa-paper-plane'], ['settings', 'Configuration', 'fa-sliders']];
 const SHORTCUTS = [['New booking', 'fa-calendar-plus', 'scBooking()'], ['Check in', 'fa-user-check', 'scCheckin()'], ['Start Your Brand', 'fa-circle-dot', 'scCam()'], ['Sell WiFi', 'fa-wifi', 'scWifi()'], ['Verify payments', 'fa-circle-check', 'scPayments()'], ['Send campaign', 'fa-paper-plane', 'scCampaign()'], ['Open play roster', 'fa-people-group', 'scRoster()'], ['Export to Excel', 'fa-file-excel', 'exportXLSX()']];
 let SEC = 'overview';
 const OWNER_LOGINS = ['jhoopin3', 'filamelitebasketball']; // demo gate: client-side only, real auth comes with Supabase
@@ -80,7 +80,7 @@ const VIEWS = {
     const booked = Object.keys(DB.schedule).length, leads = DB.customers.filter(c => c.t === 'Lead').length;
     const rev = [98, 120, 142, 131, 168, 182], max = Math.max(...rev);
     return `<div class="grid gap-5">
-      <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">${kpi((1274 + DB.customers.length).toLocaleString(), 'Customers in your database', '+142 this month')}${kpi(peso(182400), 'Revenue this month', '+8.4% vs August')}${kpi(booked + 17, 'Bookings today', '3 courts, 6AM to 11PM')}${kpi('38.6%', 'Footage keep rate', 'grace-period conversions', 'text-gold')}</div>
+      <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">${kpi((1274 + DB.customers.length).toLocaleString(), 'Customers in your database', '+142 this month')}${kpi(peso(182400), 'Revenue this month', '+8.4% vs August')}${kpi(booked + 17, 'Bookings today', `3 courts, ${hourLabel(HOURS.open)} to ${hourLabel(HOURS.close)}`)}${kpi('38.6%', 'Footage keep rate', 'grace-period conversions', 'text-gold')}</div>
       ${panel('Needs attention', `<ul class="space-y-2 text-sm">
         <li class="flex flex-wrap justify-between gap-3 items-center card p-3"><span><b class="text-gold">4 highlight packs</b> expire within 48 hours.</span><button class="btn btn-lime !py-1.5 !px-3 text-xs" onclick="sendCampaign(0)">Send reminder</button></li>
         <li class="flex flex-wrap justify-between gap-3 items-center card p-3"><span><b class="text-gold">${pend} payments</b> waiting for verification.</span><button class="btn btn-ghost !py-1.5 !px-3 text-xs" onclick="scPayments()">Verify</button></li>
@@ -93,9 +93,9 @@ const VIEWS = {
       </div></div>`;
   },
   schedule() {
-    const hrs = [...Array(17)].map((_, i) => i + 6);
+    const hrs = openHours();
     const cell = (c, h) => {
-      if (c === 2 && h >= 13 && h < 21) return `<div class="cell" style="cursor:default"><span class="text-lime">Open play</span></div>`;
+      if (isOpenPlay(c, h)) return `<div class="cell" style="cursor:default"><span class="text-lime">Open play</span></div>`;
       const b = DB.schedule[c + '-' + h];
       return b ? `<button class="cell ${b.st === 'Checked-in' ? 'in' : 'booked'}" onclick="cycleSlot(${c},${h})"><b>${b.who}</b><br>${badge(b.st)}</button>`
                : `<button class="cell open text-muted" onclick="scBooking(${c},${h})">Open</button>`;
@@ -142,13 +142,33 @@ const VIEWS = {
     return `<div class="grid gap-5">${panel('Campaigns', `<div class="grid md:grid-cols-2 gap-3">${CAMPAIGNS.map((c, i) => `<div class="card p-4"><p class="font-bold">${c.n}</p><p class="text-xs text-muted mt-1">${c.d}</p><div class="flex justify-between items-center mt-4"><span class="text-xs num">${c.aud()} recipients</span><button class="btn btn-lime !py-1.5 !px-3 text-xs" onclick="sendCampaign(${i})">Send</button></div></div>`).join('')}</div>`)}
     ${panel('Sent', `<ul class="text-sm space-y-2">${DB.sent.map(s => `<li class="flex justify-between"><span>${s.name}</span><span class="text-muted num">${s.aud} · ${s.when}</span></li>`).join('')}</ul>`)}</div>`;
   },
-  settings() {
-    const p = DB.prices, f = (k, l) => `<div><label>${l}</label><input class="num" type="number" min="0" value="${p[k]}" onchange="DB.prices.${k}=+this.value"></div>`;
-    return `<div class="grid gap-5">${panel('Pricing', `<div class="grid sm:grid-cols-3 gap-4">${f('court', 'Court rental / hour (₱)')}${f('open', 'Open play / person (₱)')}${f('unlock', 'Keep a match forever (₱)')}${f('w1', 'WiFi 1 hour (₱)')}${f('w2', 'WiFi 1 day (₱)')}${f('w3', 'WiFi 1 week (₱)')}</div>`, `<button class="btn btn-lime !py-2 text-sm" onclick="toast('Pricing saved')">Save</button>`)}
-    ${panel('Hours', `<p class="text-sm">Courts 6:00 AM to 11:00 PM daily · Open play 1PM to 5PM and 5PM to 9PM on Court 3.</p>`)}
+  settings() { // Configuration: everything on the public page, live
+    const f = (k, l) => `<div><label>${l}</label><input class="num" type="number" min="0" value="${PRICES[k]}" onchange="setPrice('${k}', this.value)"></div>`;
+    const hr = (k, l) => `<div><label>${l}</label><select onchange="setHour('${k}', this.value)">${[...Array(25)].map((_, x) => `<option value="${x}" ${HOURS[k] === x ? 'selected' : ''}>${x === 24 ? '12:00 AM (midnight)' : hourLabel(x)}</option>`).join('')}</select></div>`;
+    const groups = {};
+    Object.keys(CFG_DEFAULT).forEach(k => { const [g, ...rest] = k.split(' · '); (groups[g] = groups[g] || []).push([k, rest.join(' · ')]); });
+    const field = ([k, l]) => { const v = esc(SITE[k] ?? CFG_DEFAULT[k]); return `<div><label>${l}${SITE[k] != null ? ' <span class="text-lime">· edited</span>' : ''}</label>${v.length > 70 ? `<textarea rows="3" data-key="${k}" oninput="setText(this)">${v}</textarea>` : `<input data-key="${k}" value="${v}" oninput="setText(this)">`}</div>`; };
+    return `<div class="grid gap-5">
+    ${panel('Pricing', `<div class="grid sm:grid-cols-3 gap-4">${f('court', 'Court rental per hour (₱)')}${f('open', 'Open play per person (₱)')}${f('unlock', 'Keep a match forever (₱)')}${f('w1', 'WiFi 1 hour (₱)')}${f('w2', 'WiFi 1 day (₱)')}${f('w3', 'WiFi 1 week (₱)')}</div>`, `<span class="text-xs text-muted">Changes show on the site right away</span>`)}
+    ${panel('Hours', `<div class="grid grid-cols-2 sm:grid-cols-4 gap-4">${hr('open', 'Courts open')}${hr('close', 'Courts close')}${hr('playFrom', 'Open play starts')}${hr('playTo', 'Open play ends')}</div><p class="text-xs text-muted mt-3">Hourly booking slots on the site and the schedule follow these hours. Open play runs on Court 3.</p>`)}
+    ${panel('Page content', `<p class="text-sm text-muted mb-4">Every text and link on the public page, by section. Type to change it on the site.</p>${Object.entries(groups).map(([g, items]) => `<details class="card p-4 mb-3"><summary class="font-semibold cursor-pointer">${g} <span class="text-xs text-muted font-normal">${items.length} fields</span></summary><div class="grid gap-3 mt-4">${items.map(field).join('')}</div></details>`).join('')}`,
+      `<div class="flex gap-2"><button class="btn btn-ghost !py-2 text-sm" onclick="resetConfig()">Reset to original</button><button class="btn btn-lime !py-2 text-sm" onclick="go('home')"><i class="fa-solid fa-eye"></i>View site</button></div>`)}
     ${panel('Staff and access', `<table><thead><tr><th>Account</th><th>Role</th></tr></thead><tbody>${DB.staff.map(s => `<tr><td class="font-semibold">${s.n}</td><td>${s.role}</td></tr>`).join('')}</tbody></table>`)}</div>`;
   }
 };
+const esc = v => String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+function setPrice(k, v) { PRICES[k] = Math.max(0, Math.round(+v) || 0); saveConfig(); refreshSite(); toast('Price updated on the site'); }
+function setHour(k, v) {
+  const next = { ...HOURS, [k]: +v };
+  if (next.open >= next.close || next.playFrom >= next.playTo) { toast('Start must be before end'); return renderAdmin(); }
+  Object.assign(HOURS, next); saveConfig(); refreshSite(); toast('Hours updated'); renderAdmin();
+}
+function setText(el) { const k = el.dataset.key; if (el.value === CFG_DEFAULT[k]) delete SITE[k]; else SITE[k] = el.value; saveConfig(); applyConfig(); }
+function resetConfig() {
+  if (!confirm('Reset all prices, hours and page text to the original?')) return;
+  Object.assign(PRICES, PRICE_DEFAULT); Object.assign(HOURS, HOURS_DEFAULT); Object.keys(SITE).forEach(k => delete SITE[k]);
+  saveConfig(); refreshSite(); renderAdmin(); toast('Back to the original');
+}
 const CAMPAIGNS = [
   { n: 'Your highlights expire soon', d: 'Grace-period reminder with a one-tap ₱99 keep-forever link.', aud: () => 4 + DB.customers.filter(c => c.t === 'Lead').length },
   { n: 'Open play tonight', d: '5PM to 9PM block, ₱250, first come first served.', aud: () => 210 + DB.customers.length },
@@ -162,21 +182,24 @@ function scBooking(c, h) {
   drawer(`<h2 class="font-bold text-xl mb-5">New booking</h2><div class="space-y-4">
     <div><label for="bN">Player name</label><input id="bN" placeholder="Juan dela Cruz"></div>
     <div><label for="bC">Email or mobile</label><input id="bC" placeholder="juan@gmail.com or 0917..."></div>
-    <div class="grid grid-cols-2 gap-3"><div><label for="bCt">Court</label><select id="bCt">${[0, 1, 2].map(i => `<option value="${i}" ${i === c ? 'selected' : ''}>Court ${i + 1}</option>`).join('')}</select></div>
-    <div><label for="bH">Hour</label><select id="bH">${[...Array(17)].map((_, i) => `<option value="${i + 6}" ${i + 6 === h ? 'selected' : ''}>${hourLabel(i + 6)}</option>`).join('')}</select></div></div>
+    <div class="grid grid-cols-3 gap-3"><div><label for="bCt">Court</label><select id="bCt">${[0, 1, 2].map(i => `<option value="${i}" ${i === c ? 'selected' : ''}>Court ${i + 1}</option>`).join('')}</select></div>
+    <div><label for="bH">Start</label><select id="bH">${openHours().map(x => `<option value="${x}" ${x === h ? 'selected' : ''}>${hourLabel(x)}</option>`).join('')}</select></div>
+    <div><label for="bD">Hours</label><select id="bD">${[1, 2, 3, 4].map(n => `<option>${n}</option>`).join('')}</select></div></div>
     <div><label for="bM">Payment</label><select id="bM"><option>GCash</option><option>Maya</option><option>Cash</option><option>Pay later</option></select></div>
     <p id="bErr" class="hide text-sm text-red-300"></p>
     <button class="btn btn-lime w-full justify-center" onclick="saveBooking()">Save booking</button></div>`);
 }
 function saveBooking() {
-  const n = $('#bN').value.trim(), c = +$('#bCt').value, h = +$('#bH').value, m = $('#bM').value, contact = $('#bC').value.trim(), err = $('#bErr');
-  if (!n) { err.textContent = 'Enter the player name.'; return err.classList.remove('hide'); }
-  if (c === 2 && h >= 13 && h < 21) { err.textContent = 'Court 3 is reserved for open play at that hour.'; return err.classList.remove('hide'); }
-  if (DB.schedule[c + '-' + h]) { err.textContent = 'That hour is already booked.'; return err.classList.remove('hide'); }
-  DB.schedule[c + '-' + h] = { who: n, st: m === 'Pay later' ? 'Booked' : 'Paid' };
-  if (m !== 'Pay later') DB.payments.unshift({ ref: 'PP' + String(Date.now()).slice(-6), what: `Court ${c + 1} · ${hourLabel(h)}`, method: m, amt: DB.prices.court, st: m === 'Cash' ? 'Verified' : 'Pending' });
+  const n = $('#bN').value.trim(), c = +$('#bCt').value, h = +$('#bH').value, len = +$('#bD').value, m = $('#bM').value, contact = $('#bC').value.trim(), err = $('#bErr');
+  const hrs = [...Array(len)].map((_, i) => h + i), fail = t => { err.textContent = t; err.classList.remove('hide'); };
+  if (!n) return fail('Enter the player name.');
+  if (h + len > HOURS.close) return fail('That runs past closing time.');
+  if (hrs.some(x => isOpenPlay(c, x))) return fail('Court 3 is reserved for open play in those hours.');
+  if (hrs.some(x => DB.schedule[c + '-' + x])) return fail('One of those hours is already booked.');
+  hrs.forEach(x => { DB.schedule[c + '-' + x] = { who: n, st: m === 'Pay later' ? 'Booked' : 'Paid' }; });
+  if (m !== 'Pay later') DB.payments.unshift({ ref: 'PP' + String(Date.now()).slice(-6), what: `Court ${c + 1} · ${hourRanges(hrs)}`, method: m, amt: PRICES.court * len, st: m === 'Cash' ? 'Verified' : 'Pending' });
   if (contact && !DB.customers.some(x => x.c === contact)) DB.customers.unshift({ n, c: contact, t: 'Lead', last: 'Today', spend: 0, src: 'Walk-in' });
-  closeDlgs(); toast(`Court ${c + 1} at ${hourLabel(h)} booked for ${n}`); SEC = 'schedule'; renderAdmin();
+  closeDlgs(); toast(`Court ${c + 1}, ${hourRanges(hrs)} booked for ${n}`); SEC = 'schedule'; renderAdmin();
 }
 function cycleSlot(c, h) { const b = DB.schedule[c + '-' + h], order = ['Booked', 'Paid', 'Checked-in']; b.st = order[(order.indexOf(b.st) + 1) % 3]; toast(b.who + ': ' + b.st); renderAdmin(); }
 function scCheckin() {
@@ -225,20 +248,25 @@ const COLS = {
   Campaigns: ['sent', { Campaign: 'name', Recipients: 'aud', Sent: 'when' }],
   Staff: ['staff', { Account: 'n', Role: 'role' }]
 };
-const EXTRA = ['Bookings', 'Open play', 'Prices'];
+const EXTRA = ['Bookings', 'Open play', 'Prices', 'Hours', 'Site content'];
 function tables() {
   const t = {};
   t.Bookings = Object.entries(DB.schedule).map(([k, b]) => { const [c, h] = k.split('-').map(Number); return { Court: c + 1, 'Hour (24h)': h, Player: b.who, Status: b.st }; });
   for (const [sheet, [key, cols]] of Object.entries(COLS)) t[sheet] = DB[key].map(r => Object.fromEntries(Object.entries(cols).map(([h, f]) => [h, r[f]])));
   t['Open play'] = DB.roster.map(n => ({ Player: n }));
-  t.Prices = Object.entries(DB.prices).map(([k, v]) => ({ Setting: k, PHP: v }));
+  t.Prices = Object.entries(PRICES).map(([k, v]) => ({ Setting: k, PHP: v }));
+  t.Hours = Object.entries(HOURS).map(([k, v]) => ({ Setting: k, 'Hour (24h)': v }));
+  t['Site content'] = Object.keys(CFG_DEFAULT).map(k => ({ Field: k, Value: SITE[k] ?? CFG_DEFAULT[k] }));
   return t;
 }
 function loadTables(t) { // inverse of tables(); sheets that are missing stay as they are
   for (const [sheet, [key, cols]] of Object.entries(COLS)) if (t[sheet]) DB[key] = t[sheet].map(r => Object.fromEntries(Object.entries(cols).map(([h, f]) => [f, r[h] ?? ''])));
   if (t.Bookings) DB.schedule = Object.fromEntries(t.Bookings.map(r => [(r.Court - 1) + '-' + r['Hour (24h)'], { who: r.Player, st: r.Status }]));
   if (t['Open play']) DB.roster = t['Open play'].map(r => r.Player);
-  if (t.Prices) t.Prices.forEach(r => { DB.prices[r.Setting] = +r.PHP; });
+  if (t.Prices) t.Prices.forEach(r => { if (r.Setting in PRICES) PRICES[r.Setting] = +r.PHP; });
+  if (t.Hours) t.Hours.forEach(r => { if (r.Setting in HOURS) HOURS[r.Setting] = +r['Hour (24h)']; });
+  if (t['Site content']) t['Site content'].forEach(r => { if (!(r.Field in CFG_DEFAULT)) return; const v = String(r.Value ?? ''); if (v === CFG_DEFAULT[r.Field]) delete SITE[r.Field]; else SITE[r.Field] = v; });
+  if (t.Prices || t.Hours || t['Site content']) { saveConfig(); refreshSite(); }
   return Object.keys(t).filter(n => n in COLS || EXTRA.includes(n)).length;
 }
 const xlsx = () => window.XLSX ? Promise.resolve(window.XLSX) : new Promise((ok, bad) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload = () => ok(window.XLSX); s.onerror = bad; document.head.append(s); });
