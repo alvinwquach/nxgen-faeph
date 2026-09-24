@@ -34,6 +34,23 @@ PRESETS = {
                               fmt="MP4 · iPhone + Android", res="1080p", fps="30", quality="High", wm="Playhouse logo"),
     "Full game only": dict(reel=False, longest=False, full=True, clips=False, fmt="Camera copy"),
 }
+DETECT_HELP = {
+    "Sensitivity": "How sharp a sound must be to count as a paddle hit. Higher finds more hits: use it for soft paddles "
+                   "or a camera far from the court. Lower ignores more noise: use it if claps, shoes or music get counted. "
+                   "Recommended: 6.",
+    "Min hits": "How many paddle hits make a rally. Shorter exchanges, like a serve straight into the net, are left out. "
+                "Raise it to keep only longer rallies. Recommended: 3.",
+    "Max gap (s)": "The longest pause between two hits that still counts as the same rally. A longer pause starts a new "
+                   "rally. Raise it for slow dinking games; lower it if two points get joined into one. Recommended: 2.5 s.",
+    "Pre-roll (s)": "Seconds kept before the first hit, so the serve and set-up are in the video. Recommended: 1.8 s.",
+    "Post-roll (s)": "Seconds kept after the last hit, so the winning shot and the reaction are in the video. "
+                     "Recommended: 1.2 s.",
+    "Ignore edges %": "How much of the picture's border to ignore when checking for court movement. Raise it if people "
+                      "walking past the edges, or the next court, keep a rally going. Recommended: 5%.",
+    "Court motion": "Only counts a hit when players are moving on this court at that moment. This filters out sounds from "
+                    "the next court and music. Turn it off if rallies go missing on a camera angle that shows little "
+                    "movement. With no usable sound, the app uses movement alone.",
+}
 PRESET_NOTES = {"Recommended": "Every rally in one video, the longest rally and the full game. 1080p MP4 for iPhone and Android.",
                 "Social highlights": "The 5 best rallies as a vertical reel plus the longest rally, high quality for Reels and TikTok.",
                 "Full game only": "Just the full match, copied instantly with no re-encoding.",
@@ -235,6 +252,9 @@ def full_game(src, dst, vs, dur, prog=None):
 
 # ---------------------------------------------------------------- the whole job
 def process(src, out_dir, opt, log=print, step=lambda frac, text: None):
+    if trial_left() == 0:
+        opt = dict(opt, **TRIAL_LIMITS)
+        log("Trial ended. " + TRIAL_NOTE)
     src = Path(src)
     out = Path(out_dir) / f"{src.stem}-highlights"
     out.mkdir(parents=True, exist_ok=True)
@@ -361,6 +381,47 @@ BRAND_PNG = BASE / "assets" / "playhouse-logo.png"
 OWNER_PNG = BASE / "assets" / "linkmeio-logo.png"
 QR_MODES = ("Venue WiFi", "Custom link")
 
+# ---------------------------------------------------------------- trial edition
+# A trial build bundles trial.txt (build_trial.ps1). The clock starts at first launch. When it runs out the app
+# keeps working as a free tier. Both states are shown in the app: a countdown chip, then a "trial ended" notice.
+TRIAL_HOURS, TRIAL_FLAG = 24, BASE / "trial.txt"
+TRIAL_LIMITS = dict(reel=True, longest=False, full=False, clips=False, res="720p", logo=str(OWNER_PNG))
+TRIAL_NOTE = "Free tier: highlights video only, up to 720p, with the LINKMEIO watermark."
+TRIAL_KEY, TRIAL_FILE = r"Software\LINKMEIO\HighlightStudioIO", SETTINGS.parent / "license.json"
+
+def hours_left(t0, now, total=TRIAL_HOURS):
+    used = (now - t0) / 3600
+    return 0.0 if used < -1 else max(0.0, total - used)       # clock turned back by over an hour counts as ended
+
+def trial_left():
+    """Hours left on a trial build, or None for a full licence. The start is kept in two places; the earliest wins."""
+    if not TRIAL_FLAG.exists():
+        return None
+    now, marks = time.time(), []
+    try:
+        import winreg
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, TRIAL_KEY) as k:
+            marks.append(float(winreg.QueryValueEx(k, "Installed")[0]))
+    except (ImportError, OSError, ValueError):
+        pass
+    try:
+        marks.append(float(json.loads(TRIAL_FILE.read_text())["t0"]))
+    except (OSError, ValueError, KeyError):
+        pass
+    t0 = min(marks + [now])
+    try:
+        import winreg
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, TRIAL_KEY) as k:
+            winreg.SetValueEx(k, "Installed", 0, winreg.REG_SZ, repr(t0))
+    except (ImportError, OSError):
+        pass
+    try:
+        TRIAL_FILE.parent.mkdir(parents=True, exist_ok=True)
+        TRIAL_FILE.write_text(json.dumps({"t0": t0}))
+    except OSError:
+        pass
+    return hours_left(t0, now)
+
 def run_app():
     import tkinter as tk
     from tkinter import filedialog, messagebox
@@ -463,14 +524,27 @@ def run_app():
         s.pack(side="left", padx=(0, 22), pady=4)
         return s
 
-    def slider(parent, label, var, lo, hi, steps, fmt="{:.0f}"):
+    def info_icon(parent, key, tell):
+        """Round (i) badge: point at it or click it and the popup's help box explains the setting."""
+        i = ctk.CTkLabel(parent, text="i", width=22, height=22, corner_radius=11, fg_color=FIELD, text_color=CYAN,
+                         font=F(12, True, "Georgia"), cursor="hand2")
+        i.pack(side="left", padx=(2, 0))
+        for ev in ("<Enter>", "<Button-1>"):
+            i.bind(ev, lambda e: tell(key))
+        tell.icons.append((key, i))
+        return i
+
+    def slider(parent, label, var, lo, hi, steps, fmt="{:.0f}", tell=None):
         r = line(parent, label)
         val = ctk.CTkLabel(r, text="", width=44, font=H2, text_color=INK)
         ctk.CTkSlider(r, from_=lo, to=hi, number_of_steps=steps, variable=var, width=230, progress_color=RED,
                       button_color=INK, button_hover_color=CYAN, fg_color=LINE).pack(side="left")
         val.pack(side="left", padx=10)
+        if tell:
+            info_icon(r, label, tell)
         show = lambda *_: val.configure(text=fmt.format(var.get()))
-        var.trace_add("write", show)
+        tid = var.trace_add("write", show)
+        val.bind("<Destroy>", lambda e: any(t[1] == tid for t in var.trace_info()) and var.trace_remove("write", tid))
         show()
         return r
 
@@ -533,17 +607,32 @@ def run_app():
                  height=28).pack(side="left", padx=(8, 0))
     ctk.CTkLabel(row1, text=f"  v{VERSION} · PREMIUM  ", font=F(10, True), text_color=CYAN, fg_color=FIELD, corner_radius=8,
                  height=22).pack(side="left", padx=10)
+    trial_chip = ctk.CTkLabel(row1, text="", font=F(10, True), corner_radius=8, height=22) if TRIAL_FLAG.exists() else None
+    if trial_chip:
+        trial_chip.pack(side="left")
     ctk.CTkLabel(brand, text="Automatic rally highlights and full game exports", font=SMALL, text_color=MUTED, height=16).pack(anchor="w")
     status = ctk.CTkLabel(top, text="●  Ready", font=H2, text_color=CYAN, fg_color=FIELD, corner_radius=14, height=32, width=120)
     status.pack(side="right")
     if BRAND_PNG.exists():
         lic = ctk.CTkFrame(top, fg_color="transparent")
         lic.pack(side="right", padx=22)
-        ctk.CTkLabel(lic, text="LICENSED TO", font=F(9, True), text_color=MUTED, height=12).pack(anchor="e")
+        ctk.CTkLabel(lic, text="PREPARED FOR" if trial_chip else "LICENSED TO", font=F(9, True), text_color=MUTED, height=12).pack(anchor="e")
         ctk.CTkLabel(lic, text="", image=img(BRAND_PNG, 30)).pack(anchor="e")
     rule = tk.Canvas(root, height=2, bg=BG, highlightthickness=0)
     rule.pack(fill="x", padx=28)
     rule.bind("<Configure>", lambda e: (rule.delete("all"), gradient(rule, 0, e.width, 0, 2)))
+    ended = ctk.CTkLabel(root, text=f"Your {TRIAL_HOURS}-hour trial has ended.  {TRIAL_NOTE}  Contact {OWNER} to unlock the full version.",
+                         font=H2, text_color="#ffffff", fg_color=RED, corner_radius=12, height=36)
+    def trial_tick():
+        left = trial_left()
+        if left:
+            trial_chip.configure(text=f"  TRIAL · {max(1, round(left))} H LEFT  ", text_color=BG, fg_color=CYAN)
+        else:
+            trial_chip.configure(text="  TRIAL ENDED · FREE TIER  ", text_color="#ffffff", fg_color=RED)
+            if not ended.winfo_ismapped():
+                ended.pack(fill="x", padx=28, pady=(12, 0), after=rule)
+            v["watch"].set(False)
+        root.after(60000, trial_tick)
 
     # ---- footer: ownership mark, bottom right
     foot = ctk.CTkFrame(root, fg_color="transparent")
@@ -638,15 +727,31 @@ def run_app():
         c.pack(padx=18, pady=18)
         inner = ctk.CTkFrame(c, fg_color="transparent")
         inner.pack(padx=22, pady=18)
-        ctk.CTkLabel(inner, text="RALLY DETECTION", font=H2, text_color=INK).pack(anchor="w", pady=(0, 8))
-        slider(inner, "Sensitivity", v["sensitivity"], 1, 10, 9)
-        slider(inner, "Min hits", v["min_hits"], 2, 10, 8)
-        slider(inner, "Max gap (s)", v["gap"], 1, 6, 10, "{:.1f}")
-        slider(inner, "Pre-roll (s)", v["pre"], 0, 5, 10, "{:.1f}")
-        slider(inner, "Post-roll (s)", v["post"], 0, 5, 10, "{:.1f}")
-        slider(inner, "Ignore edges %", v["inset"], 0, 30, 6)
+        ctk.CTkLabel(inner, text="RALLY DETECTION", font=H2, text_color=INK).pack(anchor="w")
+        ctk.CTkLabel(inner, text="Point at an  i  to see what a setting does.", font=SMALL, text_color=MUTED).pack(anchor="w", pady=(0, 8))
+        helpbox = ctk.CTkFrame(inner, fg_color=FIELD, corner_radius=14, border_width=1, border_color=LINE)
+        help_t = ctk.CTkLabel(helpbox, text="WHAT DOES IT DO?", font=F(10, True), text_color=CYAN, anchor="w")
+        help_x = ctk.CTkLabel(helpbox, text="The app listens for paddle hits and checks for movement on the court. "
+                              "Hits close together become a rally.", font=SMALL, text_color=INK, justify="left",
+                              anchor="nw", wraplength=500, height=58)
+        help_t.pack(fill="x", padx=16, pady=(10, 0))
+        help_x.pack(fill="x", padx=16, pady=(2, 10))
+        def tell(key):
+            help_t.configure(text=key.replace(" (s)", "").replace(" %", "").upper())
+            help_x.configure(text=DETECT_HELP[key])
+            for k, i in tell.icons:                   # the icon being explained lights up
+                i.configure(fg_color=CYAN if k == key else FIELD, text_color=BG if k == key else CYAN)
+        tell.icons = []
+        slider(inner, "Sensitivity", v["sensitivity"], 1, 10, 9, tell=tell)
+        slider(inner, "Min hits", v["min_hits"], 2, 10, 8, tell=tell)
+        slider(inner, "Max gap (s)", v["gap"], 1, 6, 10, "{:.1f}", tell=tell)
+        slider(inner, "Pre-roll (s)", v["pre"], 0, 5, 10, "{:.1f}", tell=tell)
+        slider(inner, "Post-roll (s)", v["post"], 0, 5, 10, "{:.1f}", tell=tell)
+        slider(inner, "Ignore edges %", v["inset"], 0, 30, 6, tell=tell)
         r = line(inner, "")
         switch(r, "Require court motion (ignores the next court and music)", v["motion"])
+        info_icon(r, "Court motion", tell)
+        helpbox.pack(fill="x", pady=(12, 0))
         rr = ctk.CTkFrame(inner, fg_color="transparent")
         rr.pack(fill="x", pady=(10, 0))
         def defaults():
@@ -669,7 +774,8 @@ def run_app():
             top_n = 0
         reel = f" ({'all rallies' if v['reel_mode'].get() == 'All rallies' else f'best {top_n}'})" if v["reel"].get() else ""
         summary.configure(text=f"{v['fmt'].get()} · {v['res'].get()} · {v['fps'].get()} fps · {v['quality'].get()}\n"
-                               f"{', '.join(outs).capitalize() or 'Nothing selected'}{reel}")
+                               f"{', '.join(outs).capitalize() or 'Nothing selected'}{reel}"
+                               + ("\nTrial ended: highlights video only, 720p" if trial_left() == 0 else ""))
     for k in ("fmt", "res", "fps", "quality", "reel", "longest", "full", "clips", "top", "reel_mode"):
         v[k].trace_add("write", summarize)
     summarize()
@@ -789,7 +895,10 @@ def run_app():
         root.after(120, pump)
 
     def toggle_watch():
-        if v["watch"].get() and not Path(v["watch_dir"].get()).is_dir():
+        if v["watch"].get() and trial_left() == 0:
+            v["watch"].set(False)
+            messagebox.showinfo("Full version", f"Watch-folder automation is part of the full version. Contact {OWNER} to unlock it.")
+        elif v["watch"].get() and not Path(v["watch_dir"].get()).is_dir():
             v["watch"].set(False)
             messagebox.showwarning("Watch folder", "Choose a folder to watch first.")
         elif v["watch"].get():
@@ -823,12 +932,17 @@ def run_app():
         root.after(10000, lambda: watch_tick(sizes))
 
     root.protocol("WM_DELETE_WINDOW", lambda: (remember(), share.stop(), root.destroy()))
+    if trial_chip:
+        trial_tick()
+        if trial_left():
+            log(f"Trial edition: every feature is on for {round(trial_left())} more hours.")
     pump()
     root.mainloop()
 
 
 # ---------------------------------------------------------------- self check + CLI
 def selftest():
+    assert set(DETECT_HELP) == {"Sensitivity", "Min hits", "Max gap (s)", "Pre-roll (s)", "Post-roll (s)", "Ignore edges %", "Court motion"}
     vs = {"res": 720, "crf": 23, "fmt": "libx265", "fps": 30}
     assert vfilter(vs) == "scale=-2:min(ih\\,720),fps=30" and vfilter(dict(vs, res=None, fps=None)) == "null"
     assert "hvc1" in encoder(vs) and encoder(vs)[encoder(vs).index("-crf") + 1] == "27"
@@ -841,6 +955,8 @@ def selftest():
     assert find_rallies([5, 6, 7], 7.5, pre=1.8, post=1.2) == [(3.2, 7.5, 3)]   # clamped to video length
     assert longest_rally(segs) == (48.2, 57.2, 5) and best_rallies(segs, 1) == [(48.2, 57.2, 5)]
     assert all(k in DEFAULTS and (k not in CHOICES or val in CHOICES[k]) for p in PRESETS.values() for k, val in p.items())
+    assert hours_left(0, 3600) == 23 and hours_left(0, 25 * 3600) == 0 and hours_left(10000, 0) == 0   # set-back clock
+    assert trial_left() is None or TRIAL_FLAG.exists()                  # source runs are the full version
     print("selftest ok")
 
 def main():
