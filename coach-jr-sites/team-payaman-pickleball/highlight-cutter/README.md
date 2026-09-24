@@ -1,4 +1,4 @@
-# Highlight Studio IO v3.0
+# Highlight Studio IO v3.2
 
 © 2026 LINKMEIO. All rights reserved. Licensed to Playhouse Pickle (Team Payaman Pickleball).
 
@@ -7,6 +7,14 @@ Desktop app that turns a pickleball match video into what players take home:
 - **Longest rally**: the single longest exchange on its own.
 - **Full game**: the whole match.
 - **Clip per rally**: optional, off by default.
+- **Scoreboard** (optional, off by default): bottom left, logo small at the bottom right. After detection, the
+  operator taps who won each rally (1 / 2 / 0 keys) and the app keeps the official score: side-out doubles
+  (0-0-2 start, server 1/2), side-out singles or rally scoring, games to 11/15/21, win by 2. Styles: Broadcast,
+  Compact, Score call. "Preview on this video" shows the real burn-in before exporting. Not on camera-copy full
+  games (a stream copy can't carry graphics) and skipped on watch-folder runs (each rally needs a tap).
+  Why a tap and not automatic: rally ends are detected, but who won the rally is not. On real venue footage the
+  first detected sound is often a mid-rally shot, not the soft serve, so serve-end inference is unreliable; the
+  US leaders (PB Vision, SwingVision) track the ball in 3D and still ask a person to confirm.
 
 It finds rallies from paddle "pop" sounds (1 to 4 kHz onsets) plus movement on the court, chains hits into rallies and cuts out the dead time.
 
@@ -14,6 +22,7 @@ It finds rallies from paddle "pop" sounds (1 to 4 kHz onsets) plus movement on t
 - Desktop shortcut **Highlight Studio IO**, or `dist\HighlightStudioIO.exe` (one file, ffmpeg bundled; build with `build_exe.ps1`).
 - From source: `pip install -r requirements.txt`, then `python highlight_cutter.py`.
 - Command line: `python highlight_cutter.py --cli match.mp4 --longest --full --brand` (see `--help`).
+  Scoreboard from the command line: `--score ABB0A --teams "Keng & Pat,Junnie & Dudut" --sb-style Compact`.
 - Logic check: `python highlight_cutter.py --selftest`.
 
 ## Settings (Recommended preset = the defaults)
@@ -33,4 +42,5 @@ Settings save to `%APPDATA%\HighlightStudioIO\settings.json`. First WiFi share: 
 
 ## Status
 Tested on a synthetic match (all rally hits found, durations exact, outputs checked as H.264 High / AAC / faststart).
-Not yet tested on real court footage: detection thresholds get tuned in the Court 1 pilot.
+Scoreboard tested on a 13-minute real 1080p match (77 scoring rallies, full game duration exact, score changes on time).
+Rally detection thresholds still get tuned on Playhouse footage in the Court 1 pilot.
