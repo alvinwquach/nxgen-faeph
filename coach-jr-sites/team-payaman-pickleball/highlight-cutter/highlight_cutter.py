@@ -1,4 +1,4 @@
-"""Highlight Studio IO v3.2 · © 2026 LINKMEIO. All rights reserved.
+"""Highlight Studio IO v3.3 · © 2026 LINKMEIO. All rights reserved.
 
 Automatic pickleball highlights, licensed to Playhouse Pickle. Finds the rallies in a match video
 (paddle "pop" sounds + on-court motion), then exports one highlights video with every rally, the
@@ -15,7 +15,7 @@ import numpy as np
 import imageio_ffmpeg
 from PIL import Image, ImageDraw, ImageFont
 
-APP, VERSION, OWNER = "Highlight Studio IO", "3.2", "LINKMEIO"
+APP, VERSION, OWNER = "Highlight Studio IO", "3.3", "LINKMEIO"
 FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()          # bundled ffmpeg, nothing to install
 NOWIN = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
 VIDEO_EXT = {".mp4", ".mov", ".mkv", ".avi", ".m4v"}
@@ -656,13 +656,14 @@ def run_app():
     from PIL import Image
 
     # LINKMEIO palette: black, signal red, ice cyan
-    BG, CARD, LINE, FIELD = "#09090b", "#111114", "#24242b", "#18181d"
-    INK, MUTED, RED, RED2, CYAN = "#f4f6f6", "#8e9196", "#e81414", "#ff3434", "#5fe0e0"
+    # pickleball lime on a green-tinted dark, Discord-style rail + sidebar layout
+    BG, SIDE, CARD, LINE, FIELD = "#0c0e0b", "#121510", "#171b15", "#272d24", "#1e231c"
+    INK, MUTED, LIME, LIME2, CYAN, ON, ERR = "#f3f6ee", "#8f978a", "#c7f23d", "#d9ff5e", "#6fe3c1", "#10140c", "#ff5a4f"
     ctk.set_appearance_mode("dark")
     root = ctk.CTk(fg_color=BG)
     root.title(f"{APP} · Playhouse Pickle")
-    root.geometry("1240x850")
-    root.minsize(1100, 720)
+    root.geometry("1320x820")
+    root.minsize(1200, 720)
     if (BASE / "icon.ico").exists():
         root.iconbitmap(str(BASE / "icon.ico"))
     F = lambda size, bold=False, fam="Segoe UI": ctk.CTkFont(family=fam, size=size, weight="bold" if bold else "normal")
@@ -694,25 +695,25 @@ def run_app():
     # ---- building blocks
     def button(parent, text, cmd, primary=False, **kw):
         return ctk.CTkButton(parent, text=text, command=cmd, corner_radius=12, font=H2 if primary else TXT,
-                             fg_color=RED if primary else FIELD, hover_color=RED2 if primary else LINE,
-                             text_color="#ffffff" if primary else INK, border_width=0 if primary else 1, border_color=LINE, **kw)
+                             fg_color=LIME if primary else FIELD, hover_color=LIME2 if primary else LINE,
+                             text_color=ON if primary else INK, border_width=0 if primary else 1, border_color=LINE, **kw)
 
     def card(title, sub):
         c = ctk.CTkFrame(left, fg_color=CARD, corner_radius=18, border_width=1, border_color=LINE)
-        c.pack(fill="x", pady=(0, 14), padx=(0, 10))
+        c.pack(fill="x", pady=(0, 10), padx=(0, 8))
         h = ctk.CTkFrame(c, fg_color="transparent")
-        h.pack(fill="x", padx=22, pady=(16, 6))
-        ctk.CTkFrame(h, width=4, height=16, corner_radius=2, fg_color=RED).pack(side="left", padx=(0, 10))
+        h.pack(fill="x", padx=18, pady=(12, 4))
+        ctk.CTkFrame(h, width=4, height=16, corner_radius=2, fg_color=LIME).pack(side="left", padx=(0, 10))
         ctk.CTkLabel(h, text=title.upper(), font=H2, text_color=INK).pack(side="left")
         ctk.CTkLabel(h, text=sub, font=SMALL, text_color=MUTED).pack(side="left", padx=12)
         inner = ctk.CTkFrame(c, fg_color="transparent")
-        inner.pack(fill="x", padx=22, pady=(0, 18))
+        inner.pack(fill="x", padx=18, pady=(0, 12))
         return inner
 
     def line(parent, label):
         r = ctk.CTkFrame(parent, fg_color="transparent")
-        r.pack(fill="x", pady=5)
-        ctk.CTkLabel(r, text=label, width=124, anchor="w", font=TXT, text_color=MUTED).pack(side="left")
+        r.pack(fill="x", pady=3)
+        ctk.CTkLabel(r, text=label, width=112, anchor="w", font=TXT, text_color=MUTED).pack(side="left")
         return r
 
     def path_row(parent, label, var, pick):
@@ -728,17 +729,17 @@ def run_app():
         g = ctk.CTkFrame(r, fg_color=FIELD, corner_radius=14)
         g.pack(side="left")
         hint = ctk.CTkLabel(parent if below else r, text="", font=SMALL, text_color=CYAN if below else MUTED,
-                            wraplength=600 if below else 330, justify="left") if hints else None
+                            wraplength=520 if below else 210, justify="left") if hints else None
         if hint:
-            hint.pack(anchor="w", padx=(124, 0)) if below else hint.pack(side="left", padx=14)
-        btns = {o: ctk.CTkButton(g, text=o, height=32, width=64, corner_radius=11, font=TXT, command=lambda o=o: var.set(o))
+            hint.pack(anchor="w", padx=(112, 0)) if below else hint.pack(side="left", padx=12)
+        btns = {o: ctk.CTkButton(g, text=o, height=28, width=56, corner_radius=10, font=TXT, command=lambda o=o: var.set(o))
                 for o in options}
         for b in btns.values():
             b.pack(side="left", padx=3, pady=3)
         def paint(*_):
             for o, b in btns.items():
                 on = var.get() == o
-                b.configure(fg_color=RED if on else FIELD, hover_color=RED2 if on else LINE, text_color="#ffffff" if on else INK)
+                b.configure(fg_color=LIME if on else FIELD, hover_color=LIME2 if on else LINE, text_color=ON if on else INK)
             if hint:
                 hint.configure(text=hints.get(var.get(), ""))
         var.trace_add("write", paint)
@@ -747,7 +748,7 @@ def run_app():
 
     def switch(parent, text, var, cmd=None):
         s = ctk.CTkSwitch(parent, text=text, variable=var, onvalue=True, offvalue=False, command=cmd, font=TXT, text_color=INK,
-                          progress_color=RED, fg_color=LINE, button_color="#ffffff", button_hover_color="#e8e8e8")
+                          progress_color=LIME, fg_color=LINE, button_color="#ffffff", button_hover_color="#e8e8e8")
         s.pack(side="left", padx=(0, 22), pady=4)
         return s
 
@@ -764,7 +765,7 @@ def run_app():
     def slider(parent, label, var, lo, hi, steps, fmt="{:.0f}", tell=None):
         r = line(parent, label)
         val = ctk.CTkLabel(r, text="", width=44, font=H2, text_color=INK)
-        ctk.CTkSlider(r, from_=lo, to=hi, number_of_steps=steps, variable=var, width=230, progress_color=RED,
+        ctk.CTkSlider(r, from_=lo, to=hi, number_of_steps=steps, variable=var, width=230, progress_color=LIME,
                       button_color=INK, button_hover_color=CYAN, fg_color=LINE).pack(side="left")
         val.pack(side="left", padx=10)
         if tell:
@@ -776,7 +777,7 @@ def run_app():
         return r
 
     def blend(t):
-        a, b = (0xe8, 0x14, 0x14), (0x5f, 0xe0, 0xe0)
+        a, b = (0xc7, 0xf2, 0x3d), (0x6f, 0xe3, 0xc1)
         return "#%02x%02x%02x" % tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
 
     def gradient(canvas, x0, x1, y0, y1, steps=64):
@@ -816,68 +817,104 @@ def run_app():
             fw = int(w * self.shown)
             if fw > h:
                 gradient(self, h / 2, fw - h / 2, 0, h, steps=40)
-                self.create_oval(0, 0, h, h, fill=RED, width=0)
+                self.create_oval(0, 0, h, h, fill=LIME, width=0)
                 self.create_oval(fw - h, 0, fw, h, fill=blend(1.0), width=0)
                 if self.active:
                     for x in range(-28 + self.phase, fw - h, 28):
                         self.create_polygon(x, h, x + 10, 0, x + 18, 0, x + 8, h, fill="#ffffff", stipple="gray25", width=0)
 
-    # ---- header: product, version, licensee, status
-    top = ctk.CTkFrame(root, fg_color="transparent")
-    top.pack(fill="x", padx=28, pady=(20, 8))
-    brand = ctk.CTkFrame(top, fg_color="transparent")
-    brand.pack(side="left")
-    row1 = ctk.CTkFrame(brand, fg_color="transparent")
-    row1.pack(anchor="w")
-    ctk.CTkLabel(row1, text="Highlight Studio", font=H1, text_color=INK, height=32).pack(side="left")
-    ctk.CTkLabel(row1, text=" IO ", font=F(18, True, "Bahnschrift"), text_color="#ffffff", fg_color=RED, corner_radius=8,
-                 height=28).pack(side="left", padx=(8, 0))
-    ctk.CTkLabel(row1, text=f"  v{VERSION} · PREMIUM  ", font=F(10, True), text_color=CYAN, fg_color=FIELD, corner_radius=8,
-                 height=22).pack(side="left", padx=10)
-    trial_chip = ctk.CTkLabel(row1, text="", font=F(10, True), corner_radius=8, height=22) if TRIAL_FLAG.exists() else None
+    # ---- icon rail (far left) and sidebar navigation
+    rail = ctk.CTkFrame(root, width=68, fg_color=BG, corner_radius=0)
+    rail.pack(side="left", fill="y")
+    rail.pack_propagate(False)
+    side = ctk.CTkFrame(root, width=206, fg_color=SIDE, corner_radius=0)
+    side.pack(side="left", fill="y")
+    side.pack_propagate(False)
+    ctk.CTkLabel(rail, text="IO", width=44, height=44, corner_radius=22, fg_color=LIME, text_color=ON,
+                 font=F(17, True, "Bahnschrift")).pack(pady=(18, 10))
+    ctk.CTkFrame(rail, width=28, height=2, fg_color=LINE).pack(pady=(0, 10))
+    ctk.CTkLabel(side, text="Highlight Studio", font=F(17, True, "Bahnschrift"), text_color=INK, anchor="w").pack(fill="x", padx=18, pady=(20, 0))
+    vrow = ctk.CTkFrame(side, fg_color="transparent")
+    vrow.pack(fill="x", padx=18, pady=(4, 14))
+    ctk.CTkLabel(vrow, text=f" v{VERSION} · PREMIUM ", font=F(10, True), text_color=LIME, fg_color=FIELD, corner_radius=8,
+                 height=20).pack(side="left")
+    trial_chip = ctk.CTkLabel(side, text="", font=F(10, True), corner_radius=8, height=22) if TRIAL_FLAG.exists() else None
     if trial_chip:
-        trial_chip.pack(side="left")
-    ctk.CTkLabel(brand, text="Automatic rally highlights and full game exports", font=SMALL, text_color=MUTED, height=16).pack(anchor="w")
-    status = ctk.CTkLabel(top, text="●  Ready", font=H2, text_color=CYAN, fg_color=FIELD, corner_radius=14, height=32, width=120)
+        trial_chip.pack(anchor="w", padx=18, pady=(0, 10))
+    ctk.CTkLabel(side, text="STUDIO", font=F(10, True), text_color=MUTED, anchor="w").pack(fill="x", padx=20, pady=(0, 4))
+
+    # ---- centre: top bar, trial notice, one page per section
+    main = ctk.CTkFrame(root, fg_color="transparent")
+    right = ctk.CTkFrame(root, width=340, fg_color=SIDE, corner_radius=0)
+    right.pack(side="right", fill="y")
+    right.pack_propagate(False)
+    main.pack(side="left", fill="both", expand=True, padx=(20, 16), pady=(16, 12))
+    topbar = ctk.CTkFrame(main, fg_color="transparent")
+    topbar.pack(fill="x", pady=(0, 12))
+    page_title = ctk.CTkLabel(topbar, text="", font=H1, text_color=INK)
+    page_title.pack(side="left")
+    status = ctk.CTkLabel(topbar, text="●  Ready", font=H2, text_color=CYAN, fg_color=FIELD, corner_radius=14, height=32, width=120)
     status.pack(side="right")
-    if BRAND_PNG.exists():
-        lic = ctk.CTkFrame(top, fg_color="transparent")
-        lic.pack(side="right", padx=22)
-        ctk.CTkLabel(lic, text="PREPARED FOR" if trial_chip else "LICENSED TO", font=F(9, True), text_color=MUTED, height=12).pack(anchor="e")
-        ctk.CTkLabel(lic, text="", image=img(BRAND_PNG, 30)).pack(anchor="e")
-    rule = tk.Canvas(root, height=2, bg=BG, highlightthickness=0)
-    rule.pack(fill="x", padx=28)
-    rule.bind("<Configure>", lambda e: (rule.delete("all"), gradient(rule, 0, e.width, 0, 2)))
-    ended = ctk.CTkLabel(root, text=f"Your {TRIAL_HOURS}-hour trial has ended.  {TRIAL_NOTE}  Contact {OWNER} to unlock the full version.",
-                         font=H2, text_color="#ffffff", fg_color=RED, corner_radius=12, height=36)
+    ended = ctk.CTkLabel(main, text=f"Your {TRIAL_HOURS}-hour trial has ended.  {TRIAL_NOTE}  Contact {OWNER} to unlock the full version.",
+                         font=SMALL, text_color=ON, fg_color=LIME, corner_radius=12, height=34, wraplength=620)
     def trial_tick():
         left = trial_left()
         if left:
-            trial_chip.configure(text=f"  TRIAL · {max(1, round(left))} H LEFT  ", text_color=BG, fg_color=CYAN)
+            trial_chip.configure(text=f"  TRIAL · {max(1, round(left))} H LEFT  ", text_color=ON, fg_color=CYAN)
         else:
-            trial_chip.configure(text="  TRIAL ENDED · FREE TIER  ", text_color="#ffffff", fg_color=RED)
+            trial_chip.configure(text="  TRIAL ENDED · FREE TIER  ", text_color=ON, fg_color=LIME)
             if not ended.winfo_ismapped():
-                ended.pack(fill="x", padx=28, pady=(12, 0), after=rule)
+                ended.pack(fill="x", pady=(0, 10), after=topbar)
             v["watch"].set(False)
         root.after(60000, trial_tick)
 
-    # ---- footer: ownership mark, bottom right
-    foot = ctk.CTkFrame(root, fg_color="transparent")
-    foot.pack(side="bottom", fill="x", padx=28, pady=(0, 12))
-    if OWNER_PNG.exists():
-        ctk.CTkLabel(foot, text="", image=img(OWNER_PNG, 22)).pack(side="right")
-    ctk.CTkLabel(foot, text=f"{APP} v{VERSION}  ·  © 2026 {OWNER}. All rights reserved.", font=SMALL,
-                 text_color=MUTED).pack(side="right", padx=12)
-
-    body = ctk.CTkFrame(root, fg_color="transparent")
-    body.pack(fill="both", expand=True, padx=28, pady=(14, 10))
-    left = ctk.CTkScrollableFrame(body, fg_color="transparent", scrollbar_button_color=LINE, scrollbar_button_hover_color=MUTED)
-    left.pack(side="left", fill="both", expand=True)
-    right = ctk.CTkFrame(body, width=360, fg_color=CARD, corner_radius=20, border_width=1, border_color=LINE)
-    right.pack(side="right", fill="y", padx=(16, 0))
-    right.pack_propagate(False)
+    # hero banner on the Home page: lime-to-mint band with a pickleball
+    hero = tk.Canvas(main, height=112, bg=BG, highlightthickness=0)
+    def draw_hero(e=None):
+        w = hero.winfo_width()
+        hero.delete("all")
+        gradient(hero, 0, w, 0, 112, steps=48)
+        cx, cy, r = w - 80, 56, 40
+        hero.create_oval(cx - r, cy - r, cx + r, cy + r, fill="#e4ff7a", outline="")
+        for dx, dy in ((-16, -18), (8, -22), (22, -2), (-22, 4), (0, 2), (-6, 24), (18, 20)):
+            hero.create_oval(cx + dx - 5, cy + dy - 5, cx + dx + 5, cy + dy + 5, fill="#a8cf2a", outline="")
+        hero.create_text(24, 40, text="Turn any match into highlights", anchor="w", fill=ON, font=("Bahnschrift", 20, "bold"))
+        hero.create_text(24, 72, text="Pick a video, press Make highlights. Scoreboard and QR download included.",
+                         anchor="w", fill="#26301a", font=("Segoe UI", 11))
+    hero.bind("<Configure>", draw_hero)
+    stack = ctk.CTkFrame(main, fg_color="transparent")
+    stack.pack(fill="both", expand=True)
+    PAGES = (("Home", "\u2302", "Preset and the match video"), ("Exports", "\u25a6", "What the player takes home"),
+             ("Scoreboard", "\u25c9", "Score tally, bottom left"), ("Video", "\u25b6", "Format, size and smoothness"),
+             ("Delivery", "\u21e9", "Folder and QR download"))
+    pages, navs = {}, {}
+    def show(name):
+        for n, f in pages.items():
+            f.pack_forget()
+            navs[n].configure(fg_color=FIELD if n == name else "transparent", text_color=LIME if n == name else INK)
+        hero.pack_forget()
+        if name == "Home":
+            hero.pack(fill="x", pady=(0, 12), before=stack)
+        pages[name].pack(fill="both", expand=True)
+        page_title.configure(text=dict((n, t) for n, _, t in PAGES)[name])
+    for name, glyph, _ in PAGES:
+        pages[name] = ctk.CTkScrollableFrame(stack, fg_color="transparent", scrollbar_button_color=LINE,
+                                             scrollbar_button_hover_color=MUTED)
+        navs[name] = ctk.CTkButton(side, text=f"  {glyph}   {name}", anchor="w", height=38, corner_radius=10, font=TXT,
+                                   fg_color="transparent", hover_color=FIELD, text_color=INK, command=lambda n=name: show(n))
+        navs[name].pack(fill="x", padx=10, pady=1)
+        ctk.CTkButton(rail, text=glyph, width=44, height=44, corner_radius=22, fg_color=CARD, hover_color=FIELD, text_color=INK,
+                      font=F(16), command=lambda n=name: show(n)).pack(pady=4)
+    ctk.CTkButton(side, text="  \u25ce   Detection", anchor="w", height=38, corner_radius=10, font=TXT, fg_color="transparent",
+                  hover_color=FIELD, text_color=INK, command=lambda: detection_window()).pack(fill="x", padx=10, pady=1)
+    if BRAND_PNG.exists():
+        lic = ctk.CTkFrame(side, fg_color=CARD, corner_radius=14)
+        lic.pack(side="bottom", fill="x", padx=12, pady=14)
+        ctk.CTkLabel(lic, text="PREPARED FOR" if trial_chip else "LICENSED TO", font=F(9, True), text_color=MUTED).pack(anchor="w", padx=12, pady=(10, 0))
+        ctk.CTkLabel(lic, text="", image=img(BRAND_PNG, 34)).pack(anchor="w", padx=12, pady=(2, 12))
 
     # ---- 0 preset
+    left = pages["Home"]
     c = card("Preset", "one tap sets everything below")
     seg(c, "Use", v["preset"], list(PRESET_NOTES), PRESET_NOTES, below=True)
 
@@ -890,10 +927,12 @@ def run_app():
     switch(r, "Auto-process new recordings in the watch folder", v["watch"], lambda: toggle_watch())
 
     # ---- 2 exports
+    left = pages["Exports"]
     c = card("Exports", "what the player takes home")
     r = line(c, "Outputs")
     switch(r, "Highlights video", v["reel"])
     switch(r, "Longest rally", v["longest"])
+    r = line(c, "")
     switch(r, "Full game", v["full"])
     switch(r, "Clip per rally", v["clips"])
     seg(c, "Highlights", v["reel_mode"], list(REEL_MODES), {"All rallies": "Every rally, in match order, in one video",
@@ -909,6 +948,7 @@ def run_app():
     path_row(c, "Custom PNG", v["logo"], lambda: v["logo"].set(filedialog.askopenfilename(filetypes=[("PNG image", "*.png")]) or v["logo"].get()))
 
     # ---- 3 scoreboard (optional)
+    left = pages["Scoreboard"]
     c = card("Scoreboard", "optional · you tap who won each rally, the app keeps the score")
     r = line(c, "Scoreboard")
     switch(r, "Add a scoreboard to the videos", v["sb"])
@@ -930,9 +970,10 @@ def run_app():
     r = line(c, "")
     button(r, "Preview on this video", lambda: preview_board(), height=34).pack(side="left")
     ctk.CTkLabel(c, text="Bottom left, with your logo small at the bottom right. Watch-folder runs skip it, since each rally needs a tap.",
-                 font=SMALL, text_color=CYAN, wraplength=600, justify="left").pack(anchor="w", padx=(124, 0), pady=(4, 0))
+                 font=SMALL, text_color=CYAN, wraplength=520, justify="left").pack(anchor="w", padx=(112, 0), pady=(4, 0))
 
     # ---- 4 video output
+    left = pages["Video"]
     c = card("Video output", "format, size and smoothness")
     seg(c, "Format", v["fmt"], list(FMT), {"MP4 · iPhone + Android": "One file for iPhone, Android, PC, Facebook and TikTok",
                                            "HEVC · smaller": "Half the size; older Android and Windows may not play it",
@@ -942,6 +983,7 @@ def run_app():
     seg(c, "Quality", v["quality"], list(CRF))
 
     # ---- 5 delivery
+    left = pages["Delivery"]
     c = card("Delivery", "files in a folder, plus a QR code to scan")
     path_row(c, "Output folder", v["out"], lambda: v["out"].set(filedialog.askdirectory() or v["out"].get()))
     r = line(c, "QR code")
@@ -1079,7 +1121,7 @@ def run_app():
         tree.configure(yscrollcommand=sc.set)
         tree.pack(side="left", fill="both", expand=True, padx=(8, 0), pady=8)
         sc.pack(side="right", fill="y", pady=8)
-        tree.tag_configure("A", foreground=RED2)
+        tree.tag_configure("A", foreground=LIME2)
         tree.tag_configure("B", foreground=CYAN)
         tree.tag_configure("none", foreground=MUTED)
         for i, (a, b, n) in enumerate(chains):
@@ -1116,7 +1158,7 @@ def run_app():
                     log(f"Could not play the rally: {e}")
             threading.Thread(target=cut, daemon=True).start()
         def close(winners):
-            set_status("Working", RED2)
+            set_status("Working", LIME2)
             reply["winners"] = winners
             done.set()
             w.destroy()
@@ -1167,7 +1209,7 @@ def run_app():
         v[k].trace_add("write", summarize)
     summarize()
     go = ctk.CTkButton(right, text="Make highlights", height=56, corner_radius=14, font=F(19, True, "Bahnschrift"),
-                       fg_color=RED, hover_color=RED2, text_color="#ffffff", text_color_disabled="#f3b4b4",
+                       fg_color=LIME, hover_color=LIME2, text_color=ON, text_color_disabled="#4d5a2a",
                        command=lambda: start(v["input"].get()))
     go.pack(fill="x", padx=22, pady=(16, 14))
     prow = ctk.CTkFrame(right, fg_color="transparent")
@@ -1190,6 +1232,12 @@ def run_app():
     button(row, "Open folder", lambda: state["out"] and os.startfile(state["out"]), height=36).pack(side="left", fill="x", expand=True)
     button(row, "Copy link", lambda: state["url"] and (root.clipboard_clear(), root.clipboard_append(state["url"]), log("Link copied.")),
            height=36).pack(side="left", fill="x", expand=True, padx=(8, 0))
+    foot = ctk.CTkFrame(right, fg_color="transparent")
+    foot.pack(side="bottom", fill="x", padx=22, pady=(0, 14))
+    if OWNER_PNG.exists():
+        ctk.CTkLabel(foot, text="", image=img(OWNER_PNG, 22)).pack(side="right")
+    ctk.CTkLabel(foot, text=f"{APP} v{VERSION}\n© 2026 {OWNER}. All rights reserved.", font=SMALL, text_color=MUTED,
+                 justify="left").pack(side="left")
     tools = ctk.CTkFrame(right, fg_color="transparent")
     tools.pack(side="bottom", fill="x", padx=22, pady=(6, 18))
     button(tools, "Detection settings", detection_window, height=34).pack(side="left", fill="x", expand=True)
@@ -1229,7 +1277,7 @@ def run_app():
         remember()
         state["busy"], state["t0"] = True, time.time()
         go.configure(state="disabled", text="Working…")
-        set_status("Working", RED2)
+        set_status("Working", LIME2)
         bar.set(0)
         o, out_dir = opts(), v["out"].get()
         state["src"] = path
@@ -1284,7 +1332,7 @@ def run_app():
                         logbox.insert("end", f"QR code failed: {e}\n")
                 else:
                     bar.set(bar.shown, active=False)
-                    set_status("Error", RED2)
+                    set_status("Error", ERR)
                     stage.configure(text="Could not finish. See the log.")
                     logbox.insert("end", "Error: " + data + "\n")
                     messagebox.showerror("Could not finish", data)
@@ -1330,6 +1378,7 @@ def run_app():
             log(f"Watch folder: {e}")
         root.after(10000, lambda: watch_tick(sizes))
 
+    show("Home")
     root.protocol("WM_DELETE_WINDOW", lambda: (remember(), share.stop(), root.destroy()))
     if trial_chip:
         trial_tick()

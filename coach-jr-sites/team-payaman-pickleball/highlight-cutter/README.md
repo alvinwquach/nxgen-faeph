@@ -1,8 +1,8 @@
-# Highlight Studio IO v3.2
+# Highlight Studio IO v3.3
 
 © 2026 LINKMEIO. All rights reserved. Licensed to Playhouse Pickle (Team Payaman Pickleball).
 
-Desktop app that turns a pickleball match video into what players take home:
+Desktop app that turns a pickleball match video into what players take home. v3.3 look: pickleball-lime theme, icon rail + sidebar pages (Home, Exports, Scoreboard, Video, Delivery), export panel pinned right.
 - **Highlights video**: every rally in one video (or only the best N), vertical 9:16 or 16:9, Playhouse watermark.
 - **Longest rally**: the single longest exchange on its own.
 - **Full game**: the whole match.
