@@ -100,7 +100,7 @@ const VIEWS = {
       return b ? `<button class="cell ${b.st === 'Checked-in' ? 'in' : 'booked'}" onclick="cycleSlot(${c},${h})"><b>${b.who}</b><br>${badge(b.st)}</button>`
                : `<button class="cell open text-muted" onclick="scBooking(${c},${h})">Open</button>`;
     };
-    return panel('Today · court schedule', `<div class="overflow-x-auto"><div class="grid-sched min-w-[520px]"><div></div>${[1, 2, 3].map(c => `<div class="text-xs font-semibold text-muted px-1">Court ${c}</div>`).join('')}${hrs.map(h => `<div class="text-xs text-muted pt-2 num">${hourLabel(h)}</div>${[0, 1, 2].map(c => cell(c, h)).join('')}`).join('')}</div></div><p class="text-xs text-muted mt-4">Tap an open hour to book it. Tap a booking to move it from Booked to Paid to Checked-in.</p>`, `<button class="btn btn-lime !py-2 text-sm" onclick="scBooking()"><i class="fa-solid fa-plus"></i>New booking</button>`);
+    return panel('Today · court schedule', `<div class="overflow-x-auto"><div class="grid-sched min-w-[520px]"><div></div>${[1, 2, 3].map(c => `<div class="text-xs font-semibold text-muted px-1">Court ${c}</div>`).join('')}${hrs.map(h => `<div class="text-xs text-muted pt-2 num">${hourLabel(h)}</div>${[0, 1, 2].map(c => cell(c, h)).join('')}`).join('')}</div></div><p class="text-xs text-muted mt-4">Bookings are by the hour: tap an open hour to start, then add as many hours as you need. Tap a booking to move it from Booked to Paid to Checked-in.</p>`, `<button class="btn btn-lime !py-2 text-sm" onclick="scBooking()"><i class="fa-solid fa-plus"></i>New booking</button>`);
   },
   customers() {
     const f = VIEWS.f || 'All';
@@ -179,24 +179,36 @@ const CAMPAIGNS = [
 
 // ---------- actions ----------
 function drawer(html) { $('#drawerBody').innerHTML = `<button class="x" style="position:absolute;right:16px;top:12px;background:none;border:0;color:#9A9BA2;font-size:24px;cursor:pointer" onclick="closeDlgs()" aria-label="Close">&times;</button>` + html; openDlg('dlgDrawer'); }
-function scBooking(c, h) {
+let BK = { c: 0, hrs: [] };
+function scBooking(c = 0, h) {
+  BK = { c, hrs: h == null ? [] : [h] };
   drawer(`<h2 class="font-bold text-xl mb-5">New booking</h2><div class="space-y-4">
     <div><label for="bN">Player name</label><input id="bN" placeholder="Juan dela Cruz"></div>
     <div><label for="bC">Email or mobile</label><input id="bC" placeholder="juan@gmail.com or 0917..."></div>
-    <div class="grid grid-cols-3 gap-3"><div><label for="bCt">Court</label><select id="bCt">${[0, 1, 2].map(i => `<option value="${i}" ${i === c ? 'selected' : ''}>Court ${i + 1}</option>`).join('')}</select></div>
-    <div><label for="bH">Start</label><select id="bH">${openHours().map(x => `<option value="${x}" ${x === h ? 'selected' : ''}>${hourLabel(x)}</option>`).join('')}</select></div>
-    <div><label for="bD">Hours</label><select id="bD">${[1, 2, 3, 4].map(n => `<option>${n}</option>`).join('')}</select></div></div>
+    <div><label>Court</label><div class="flex gap-2" id="bkCourts"></div></div>
+    <div><label>Hours <span class="text-muted">· tap each hour to book</span></label><div class="grid grid-cols-3 gap-2" id="bkHours"></div><p class="text-sm mt-3" id="bkSum"></p></div>
     <div><label for="bM">Payment</label><select id="bM"><option>GCash</option><option>Maya</option><option>Cash</option><option>Pay later</option></select></div>
     <p id="bErr" class="hide text-sm text-red-300"></p>
     <button class="btn btn-lime w-full justify-center" onclick="saveBooking()">Save booking</button></div>`);
+  bkRender();
 }
+function bkRender() {
+  $('#bkCourts').innerHTML = [0, 1, 2].map(i => `<button class="chip flex-1 text-sm" aria-pressed="${i === BK.c}" onclick="BK.c=${i};BK.hrs=[];bkRender()">Court ${i + 1}</button>`).join('');
+  $('#bkHours').innerHTML = openHours().map(h => {
+    const busy = isOpenPlay(BK.c, h) ? 'Open play' : DB.schedule[BK.c + '-' + h] ? 'Booked' : '', on = BK.hrs.includes(h);
+    return busy ? `<div class="cell text-center text-muted" style="cursor:default;font-size:12px">${hourLabel(h)}<br><span class="text-[10px]">${busy}</span></div>`
+                : `<button class="cell open text-center ${on ? 'booked' : ''}" aria-pressed="${on}" style="font-size:12px" onclick="bkToggle(${h})">${hourLabel(h)}</button>`;
+  }).join('');
+  const n = BK.hrs.length;
+  $('#bkSum').innerHTML = n ? `${hourRanges(BK.hrs)} · ${n} hour${n > 1 ? 's' : ''} × ${peso(PRICES.court)} = <b class="text-lime">${peso(n * PRICES.court)}</b>` : '<span class="text-muted">No hours picked yet.</span>';
+}
+function bkToggle(h) { const i = BK.hrs.indexOf(h); if (i < 0) BK.hrs.push(h); else BK.hrs.splice(i, 1); BK.hrs.sort((a, b) => a - b); bkRender(); }
 function saveBooking() {
-  const n = $('#bN').value.trim(), c = +$('#bCt').value, h = +$('#bH').value, len = +$('#bD').value, m = $('#bM').value, contact = $('#bC').value.trim(), err = $('#bErr');
-  const hrs = [...Array(len)].map((_, i) => h + i), fail = t => { err.textContent = t; err.classList.remove('hide'); };
+  const n = $('#bN').value.trim(), c = BK.c, hrs = BK.hrs, len = hrs.length, m = $('#bM').value, contact = $('#bC').value.trim(), err = $('#bErr');
+  const fail = t => { err.textContent = t; err.classList.remove('hide'); };
   if (!n) return fail('Enter the player name.');
-  if (h + len > HOURS.close) return fail('That runs past closing time.');
-  if (hrs.some(x => isOpenPlay(c, x))) return fail('Court 3 is reserved for open play in those hours.');
-  if (hrs.some(x => DB.schedule[c + '-' + x])) return fail('One of those hours is already booked.');
+  if (!len) return fail('Tap at least one hour.');
+  if (hrs.some(x => isOpenPlay(c, x) || DB.schedule[c + '-' + x])) return fail('One of those hours was just taken. Pick again.');
   hrs.forEach(x => { DB.schedule[c + '-' + x] = { who: n, st: m === 'Pay later' ? 'Booked' : 'Paid' }; });
   if (m !== 'Pay later') DB.payments.unshift({ ref: 'PP' + String(Date.now()).slice(-6), what: `Court ${c + 1} · ${hourRanges(hrs)}`, method: m, amt: PRICES.court * len, st: m === 'Cash' ? 'Verified' : 'Pending' });
   if (contact && !DB.customers.some(x => x.c === contact)) DB.customers.unshift({ n, c: contact, t: 'Lead', last: 'Today', spend: 0, src: 'Walk-in' });

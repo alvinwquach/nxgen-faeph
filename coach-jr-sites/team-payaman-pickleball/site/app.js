@@ -235,7 +235,7 @@ function openShare(i, fresh) {
   $('#shCaption').value = caption(b); shareFmt(SH.fmt); openDlg('dlgShare');
 }
 function shareFmt(f) { SH.fmt = f; document.querySelectorAll('[data-fmt]').forEach(el => el.setAttribute('aria-pressed', el.dataset.fmt === f)); drawShare(); }
-function fit(x, text, max, size, weight, fam) { do { x.font = `${weight} ${size}px ${fam}`; size -= 4; } while (x.measureText(text).width > max && size > 36); }
+function fit(x, text, max, size, weight, fam) { do { x.font = `${weight} ${size}px ${fam}`; size -= 4; } while (x.measureText(text).width > max && size > 20); }
 async function drawShare() {
   const b = BADGES[SH.i], story = SH.fmt === 'story', W = 1080, H = story ? 1920 : 1350, c = $('#shCanvas'), x = c.getContext('2d');
   await Promise.all(['800 100px Archivo', '600 40px Geist'].map(f => document.fonts.load(f))).catch(() => {});
@@ -255,7 +255,7 @@ async function drawShare() {
   x.beginPath(); x.arc(W / 2, cy, R - 30, 0, Math.PI * 2); x.lineWidth = 3; x.strokeStyle = 'rgba(221,224,29,.35)'; x.stroke();
   if ('fontStretch' in x) x.fontStretch = 'expanded';
   x.textBaseline = 'middle'; x.fillStyle = '#F3F4EE'; fit(x, String(b.need), R * 1.5, 230, 800, 'Archivo'); x.fillText(b.need, W / 2, cy - 22);
-  x.fillStyle = '#DDE01D'; x.font = '700 38px Geist'; x.fillText(unit(b).toUpperCase(), W / 2, cy + 112);
+  x.fillStyle = '#DDE01D'; fit(x, unit(b).toUpperCase(), (R - 70) * 2, 38, 700, 'Geist'); x.fillText(unit(b).toUpperCase(), W / 2, cy + 112);
   x.textBaseline = 'alphabetic'; x.fillStyle = '#F3F4EE'; const title = bText(b, 'name').toUpperCase();
   fit(x, title, W - 160, 110, 800, 'Archivo'); x.fillText(title, W / 2, cy + R + 150);
   if ('fontStretch' in x) x.fontStretch = 'normal';
