@@ -1,4 +1,4 @@
-"""Highlight Studio IO v3.3 · © 2026 LINKMEIO. All rights reserved.
+"""Highlight Studio IO v3.4 · © 2026 LINKMEIO. All rights reserved.
 
 Automatic pickleball highlights, licensed to Playhouse Pickle. Finds the rallies in a match video
 (paddle "pop" sounds + on-court motion), then exports one highlights video with every rally, the
@@ -8,14 +8,14 @@ longest rally, the full game and/or one clip per rally, and shares them by QR co
     python highlight_cutter.py --cli match.mp4      command line (see --help)
     python highlight_cutter.py --selftest           quick logic check
 """
-import argparse, functools, http.server, json, os, queue, re, socket, subprocess, sys, tempfile, threading, time
+import argparse, datetime, functools, http.server, json, os, queue, re, socket, subprocess, sys, tempfile, threading, time, urllib.parse
 from pathlib import Path
 
 import numpy as np
 import imageio_ffmpeg
 from PIL import Image, ImageDraw, ImageFont
 
-APP, VERSION, OWNER = "Highlight Studio IO", "3.3", "LINKMEIO"
+APP, VERSION, OWNER = "Highlight Studio IO", "3.4", "LINKMEIO"
 FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()          # bundled ffmpeg, nothing to install
 NOWIN = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
 VIDEO_EXT = {".mp4", ".mov", ".mkv", ".avi", ".m4v"}
@@ -28,13 +28,14 @@ WATERMARKS = ("Playhouse logo", "Custom PNG", "None")
 SCORING = ("Side-out doubles", "Side-out singles", "Rally scoring")
 SB_STYLES = ("Broadcast", "Compact", "Score call")
 GAME_TO, SIDES = ("11", "15", "21"), ("Team A", "Team B")
+SB_SOURCES = ("Phone at the court", "Tap after the match")
 CHOICES = {"fmt": FMT, "res": RES, "fps": FPS, "quality": CRF, "reel_mode": REEL_MODES, "wm": WATERMARKS,
-           "sb_style": SB_STYLES, "sb_fmt": SCORING, "sb_to": GAME_TO, "sb_first": SIDES}
+           "sb_style": SB_STYLES, "sb_fmt": SCORING, "sb_to": GAME_TO, "sb_first": SIDES, "sb_src": SB_SOURCES}
 DEFAULTS = dict(fmt="MP4 · iPhone + Android", res="1080p", fps="30", quality="Standard",       # = the Recommended preset
                 reel=True, reel_mode="All rallies", top=8, longest=True, full=True, clips=False, vertical=True,
                 wm="Playhouse logo", logo="", sensitivity=6, min_hits=3, gap=2.5, pre=1.8, post=1.2, motion=True, inset=5,
                 sb=False, sb_style="Broadcast", sb_fmt="Side-out doubles", sb_to="11", sb_first="Team A",
-                team_a="Team A", team_b="Team B", sb_server=True, sb_games=True)
+                team_a="Team A", team_b="Team B", sb_server=True, sb_games=True, sb_src="Phone at the court")
 PRESETS = {
     "Recommended": {k: DEFAULTS[k] for k in ("fmt", "res", "fps", "quality", "reel", "reel_mode", "longest", "full", "clips", "vertical", "wm")},
     "Social highlights": dict(reel=True, reel_mode="Best rallies", top=5, longest=True, full=False, clips=False, vertical=True,
@@ -417,7 +418,209 @@ def overlays(tmp, tag, vf, W, H, vertical, logo=None, sb=None, timeline=None):
 
 def sb_settings(opt):
     return dict(style=opt["sb_style"], fmt=opt["sb_fmt"], to=int(opt["sb_to"]), server=opt["sb_server"], games=opt["sb_games"],
+                first=SIDES.index(opt["sb_first"]),
                 names=((opt["team_a"] or "Team A").strip()[:18], (opt["team_b"] or "Team B").strip()[:18]))
+
+# ---------------------------------------------------------------- phone scoring at the court
+TAPS_FILE, SCORE_PORT = SETTINGS.parent / "taps.json", 8900
+
+class Taps:
+    """Rally results tapped on phones during play, stamped with this PC's clock, kept on disk so a restart loses nothing.
+    An item is {"t", "court", "team": 0|1} or a new-match marker {"t", "court", "new": True}."""
+    def __init__(self, path=TAPS_FILE):
+        self.path, self.lock = Path(path), threading.Lock()
+        try:
+            self.items = json.loads(self.path.read_text())
+        except (OSError, ValueError):
+            self.items = []
+    def _save(self):
+        try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            self.path.write_text(json.dumps(self.items[-20000:]))
+        except OSError:
+            pass
+    def add(self, court, team=None, t=None):
+        with self.lock:
+            self.items.append(dict(t=round(t or time.time(), 2), court=court, **({"team": team} if team is not None else {"new": True})))
+            self._save()
+    def undo(self, court):
+        with self.lock:
+            for i in range(len(self.items) - 1, -1, -1):
+                if self.items[i]["court"] == court and "team" in self.items[i]:
+                    del self.items[i]
+                    break
+            self._save()
+    def match(self, court, t0=None, t1=None):
+        """This court's taps from its last new-match marker before t0 (default: now) up to t1, markers included."""
+        with self.lock:
+            mine = [x for x in self.items if court is None or x["court"] == court]
+        t0 = time.time() if t0 is None else t0
+        marks = [x["t"] for x in mine if x.get("new") and x["t"] <= t0]
+        begin = max(marks + [t0 - 3 * 3600])
+        return [x for x in mine if begin <= x["t"] <= (t1 or float("inf"))]
+
+def split_games(items):
+    """Groups of taps between new-match markers."""
+    out = [[]]
+    for x in items:
+        if x.get("new"):
+            out.append([])
+        else:
+            out[-1].append(x)
+    return [g for g in out if g]
+
+def live_state(taps, sb, court):
+    """What a phone at the court shows after each tap."""
+    groups = split_games(taps.match(court))
+    ws = [x["team"] for x in groups[-1]] if groups else []
+    st = score_states(ws, sb["fmt"], sb["to"], sb["first"])
+    cur = st[-1][1] if st else dict(p=[0, 0], g=[0, 0], sv=sb["first"], sn=2 if sb["fmt"] == SCORING[0] else 0, won=None)
+    w = cur["won"]
+    return dict(names=sb["names"], p=cur["p"], g=cur["g"], sv=cur["sv"], sn=cur["sn"], won=w, taps=len(ws),
+                call=f"{cur['p'][w]}-{cur['p'][1 - w]}" if w is not None else score_call(cur))
+
+def recording_starts(path, dur):
+    """Candidate wall-clock starts: file time minus length (camera writing to this PC), and the container's creation time."""
+    out = [Path(path).stat().st_mtime - dur]
+    err = subprocess.run([FFMPEG, "-hide_banner", "-i", str(path)], capture_output=True, text=True, creationflags=NOWIN).stderr
+    m = re.search(r"creation_time\s*:\s*(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)", err)
+    if m:
+        out.append(datetime.datetime.fromisoformat(m[1]).replace(tzinfo=datetime.timezone.utc).timestamp())
+    return out
+
+def align_shift(vts, ends, window=600, after=20.0):
+    """Clocks drift, so try shifts within +-window s and keep the one that lands the most taps 0-`after` s after a
+    rally end (players tap just after the point). Returns (shift, taps matched)."""
+    if not len(vts) or not len(ends):
+        return 0.0, 0
+    vts, ends = np.asarray(vts, float), np.sort(np.asarray(ends, float))
+    best = None
+    for sh in np.arange(-window, window + 0.5, 0.5):
+        v = vts + sh
+        i = np.searchsorted(ends, v, side="right") - 1
+        gap = v - ends[np.clip(i, 0, None)]
+        ok = (i >= 0) & (gap >= 0) & (gap <= after)
+        key = (int(ok.sum()), -float(gap[ok].sum()))     # most taps matched, then the quickest taps after the point
+        if best is None or key > best[0]:
+            best = (key, float(sh))
+    return best[1], best[0][0]
+
+def court_of(name):
+    m = re.search(r"court\s*[-_#]?\s*(\d+)", name, re.I)
+    return int(m[1]) if m else None
+
+def phone_board(src, dur, chains, opt, log, taps):
+    """Scoreboard from phone taps made during this recording. Returns (board, winners) or None."""
+    court, ends = court_of(Path(src).name), [e for _, e, _ in chains]
+    best = None
+    for start in recording_starts(src, dur):
+        items = taps.match(court, start, start + dur + 900)
+        pts = [x for x in items if "team" in x]
+        inside = [x["t"] - start for x in pts if -900 <= x["t"] - start <= dur + 900]
+        if not pts or not inside:
+            continue
+        sh, n = align_shift(inside, ends)
+        if best is None or n > best[0]:
+            best = (n, start - sh, items)
+    if not best:
+        log(f"No phone taps found for this match{f' on court {court}' if court else ''}, so it is saved without a scoreboard.")
+        return None
+    n, start, items = best
+    sb, chains_, winners, states = sb_settings(opt), [], [], []
+    for g in split_games(items):
+        for x in g:
+            vt = x["t"] - start
+            prev = [e for e in ends if 0 <= vt - e <= 20]
+            t = (prev[-1] + 0.2) if prev else vt                     # the board changes as the point ends, not at the tap
+            chains_.append((t, t, 1))
+            winners.append(x["team"])
+        states += score_states([x["team"] for x in g], sb["fmt"], sb["to"], sb["first"])
+    log(f"Phone scoring: {len(winners)} taps, {n} lined up with rally ends. Final: {final_line(states, sb)}.")
+    return (sb, chains_, states), winners
+
+SCORE_PAGE = """<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Score · Highlight Studio IO</title><style>
+body{margin:0;background:#0c0e0b;color:#f3f6ee;font:16px 'Segoe UI',system-ui,sans-serif;padding:18px;max-width:520px;margin:auto}
+header{display:flex;justify-content:space-between;align-items:center}h1{font-size:18px;margin:0}
+select{background:#1e231c;color:#f3f6ee;border:1px solid #272d24;border-radius:10px;padding:8px;font-size:16px}
+.board{background:#171b15;border:1px solid #272d24;border-radius:18px;padding:16px;margin:16px 0}
+.call{font:700 56px Bahnschrift,'Segoe UI',sans-serif;text-align:center;margin:4px 0 10px}
+.row{display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-top:1px solid #272d24;font-size:18px}
+.row b{font-size:26px}.srv{color:#6fe3c1;font-size:13px}.muted{color:#8f978a;font-size:13px;text-align:center}
+button{width:100%;border:0;border-radius:18px;font:700 22px 'Segoe UI',sans-serif;padding:26px 10px;margin:8px 0;touch-action:manipulation}
+.a{background:#c7f23d;color:#10140c}.b{background:#6fe3c1;color:#10140c}
+.small{display:flex;gap:10px}.small button{font-size:15px;padding:14px;background:#1e231c;color:#f3f6ee;border:1px solid #272d24}
+</style><header><h1>Playhouse Pickle</h1><select id="court"></select></header>
+<div class="board"><div class="muted" id="tag">SCORE</div><div class="call" id="call">0-0-2</div>
+<div class="row"><span id="n0">Team A</span><span><span class="srv" id="s0"></span> <b id="p0">0</b></span></div>
+<div class="row"><span id="n1">Team B</span><span><span class="srv" id="s1"></span> <b id="p1">0</b></span></div></div>
+<button class="a" id="w0">Team A won the rally</button><button class="b" id="w1">Team B won the rally</button>
+<div class="small"><button id="undo">Undo last</button><button id="new">New match</button></div>
+<p class="muted">Tap after every rally, including faults. The app lines each tap up with the video.</p>
+<script>
+const $=id=>document.getElementById(id);let court=1;try{court=+localStorage.getItem('court')||1}catch(e){}
+for(let i=1;i<=6;i++){const o=document.createElement('option');o.value=i;o.textContent='Court '+i;if(i===court)o.selected=true;$('court').append(o)}
+$('court').onchange=e=>{court=+e.target.value;try{localStorage.setItem('court',court)}catch(e){}load()};
+function show(s){$('call').textContent=s.call;$('tag').textContent=s.won===null?'SCORE · '+s.taps+' rallies':'GAME · '+s.names[s.won];
+for(const i of [0,1]){$('n'+i).textContent=s.names[i]+(s.g[0]+s.g[1]?' ('+s.g[i]+')':'');$('p'+i).textContent=s.p[i];
+$('s'+i).textContent=s.won===null&&s.sv===i?(s.sn?'serving · '+(s.sn===1?'1st':'2nd'):'serving'):'';$('w'+i).textContent=s.names[i]+' won the rally'}}
+async function go(path){try{const r=await fetch(path+'?court='+court,{method:path==='/state'?'GET':'POST',cache:'no-store'});show(await r.json())}catch(e){$('tag').textContent='Not connected: is the app open?'}}
+const load=()=>go('/state');$('w0').onclick=()=>go('/tap/0');$('w1').onclick=()=>go('/tap/1');$('undo').onclick=()=>go('/undo');
+$('new').onclick=()=>{if(confirm('Start a new match on court '+court+'? The score goes back to 0-0-2.'))go('/new')};load();setInterval(load,2000);
+</script>"""
+
+class ScoreServer:
+    """The phone scoring page on the venue WiFi. `live` holds the scoreboard settings, refreshed by the app."""
+    def __init__(self, taps, live, port=SCORE_PORT):
+        class H(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *a):
+                pass
+            def reply(self, body, ctype="application/json", code=200):
+                b = body.encode("utf-8")
+                self.send_response(code)
+                self.send_header("Content-Type", ctype + "; charset=utf-8")
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("Content-Length", str(len(b)))
+                self.end_headers()
+                self.wfile.write(b)
+            def route(self, post):
+                u = urllib.parse.urlparse(self.path)
+                try:
+                    court = min(9, max(1, int(urllib.parse.parse_qs(u.query).get("court", ["1"])[0])))
+                except ValueError:
+                    return self.reply('{"error": "bad court"}', code=400)
+                if not post:
+                    return self.reply(SCORE_PAGE, "text/html") if u.path in ("/", "/index.html") else \
+                        self.reply(json.dumps(live_state(taps, live["sb"], court))) if u.path == "/state" else self.reply("{}", code=404)
+                if u.path in ("/tap/0", "/tap/1"):
+                    taps.add(court, int(u.path[-1]))
+                elif u.path == "/undo":
+                    taps.undo(court)
+                elif u.path == "/new":
+                    taps.add(court)
+                else:
+                    return self.reply("{}", code=404)
+                self.reply(json.dumps(live_state(taps, live["sb"], court)))
+            def do_GET(self):
+                self.route(False)
+            def do_POST(self):
+                self.route(True)
+        self.httpd = None
+        for p in range(port, port + 10):
+            try:
+                self.httpd = http.server.ThreadingHTTPServer(("0.0.0.0", p), H)
+                break
+            except OSError:
+                continue
+        if self.httpd:
+            threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
+    @property
+    def url(self):
+        return f"http://{lan_ip()}:{self.httpd.server_address[1]}/" if self.httpd else ""
+    def stop(self):
+        if self.httpd:
+            self.httpd.shutdown()
+            self.httpd.server_close()
 
 def final_line(states, sb):
     st = states[-1][1]
@@ -463,7 +666,7 @@ def full_game(src, dst, vs, dur, prog=None, logo=None, board=None):
 
 
 # ---------------------------------------------------------------- the whole job
-def process(src, out_dir, opt, log=print, step=lambda frac, text: None, scorer=None):
+def process(src, out_dir, opt, log=print, step=lambda frac, text: None, scorer=None, taps=None):
     """scorer(chains, segs) -> a winner per chain (0, 1 or None), or None to skip the scoreboard."""
     if trial_left() == 0:
         opt = dict(opt, **TRIAL_LIMITS)
@@ -492,7 +695,13 @@ def process(src, out_dir, opt, log=print, step=lambda frac, text: None, scorer=N
     vs = {"res": RES[opt["res"]], "crf": CRF[opt["quality"]], "fmt": FMT[opt["fmt"]], "fps": FPS[opt["fps"]]}
     copy_ext = src.suffix if vs["fmt"] == "copy" else ".mp4"
     board, chains, winners = None, point_chains(hits, opt["gap"], active), None
-    if opt.get("sb") and scorer:
+    if opt.get("sb") and opt.get("sb_src", SB_SOURCES[0]) == SB_SOURCES[0]:
+        got = phone_board(src, dur, chains, opt, log, taps or Taps())
+        if got:
+            board, winners = got
+            if vs["fmt"] == "copy" and opt["full"]:
+                log("Camera copy can't carry a scoreboard, so the full game is saved without one.")
+    elif opt.get("sb") and scorer:
         step(0.35, "Waiting for the score")
         winners = scorer(chains, segs)
         if winners and any(w is not None for w in winners):
@@ -542,7 +751,7 @@ def process(src, out_dir, opt, log=print, step=lambda frac, text: None, scorer=N
     (out / "rallies.json").write_text(json.dumps({"source": src.name, "duration_s": round(dur, 1),
         "rallies": [{"start_s": a, "end_s": b, "hits": n} for a, b, n in segs],
         **({"points": [{"first_hit_s": round(a, 2), "last_hit_s": round(b, 2), "hits": n, "won_by": board[0]["names"][w] if w is not None else None,
-                        "score_after": score_call(st[1])} for (a, b, n), w, st in zip(chains, winners, board[2])]} if board else {})}, indent=2))
+                        "score_after": score_call(st[1])} for (a, b, n), w, st in zip(board[1], winners, board[2])]} if board else {})}, indent=2))
     write_share_page(out, files)
     step(1.0, f"Done · {len(files)} file{'s' if len(files) != 1 else ''}")
     log(f"Done. Files are in {out}")
@@ -690,6 +899,26 @@ def run_app():
         save_settings({k: var.get() for k, var in v.items() if k not in ("input", "watch")})
 
     msgs, share = queue.Queue(), Share()
+    live = {"sb": sb_settings({k: v[k].get() for k in DEFAULTS})}
+    scoring = ScoreServer(Taps(), live)
+    def sync_live(*_):
+        try:
+            live["sb"] = sb_settings({k: v[k].get() for k in DEFAULTS})
+        except (tk.TclError, ValueError):
+            pass
+    for k in ("sb_fmt", "sb_to", "sb_first", "team_a", "team_b"):
+        v[k].trace_add("write", sync_live)
+    def court_qr():
+        if not scoring.url:
+            return
+        png = save_qr(scoring.url, Path(tempfile.mkdtemp()) / "score-qr.png")
+        w = ctk.CTkToplevel(root, fg_color=BG)
+        w.title(f"Phone scoring · {APP}")
+        w.transient(root)
+        ctk.CTkLabel(w, text="SCORE FROM YOUR PHONE", font=H2, text_color=INK).pack(padx=24, pady=(20, 6))
+        ctk.CTkLabel(w, text="", image=ctk.CTkImage(Image.open(png), Image.open(png), size=(260, 260))).pack(padx=24)
+        ctk.CTkLabel(w, text=f"{scoring.url}\nPhones on the venue WiFi. Print it and stick it at the court.", font=SMALL,
+                     text_color=MUTED, justify="center").pack(padx=24, pady=(8, 20))
     state = {"out": None, "busy": False, "seen": set(), "url": "", "applying": False, "t0": 0.0, "src": ""}
 
     # ---- building blocks
@@ -963,13 +1192,18 @@ def run_app():
     for k in ("team_a", "team_b"):
         ctk.CTkEntry(r, textvariable=v[k], width=170, fg_color=FIELD, border_color=LINE, text_color=INK, height=36,
                      corner_radius=12, font=TXT).pack(side="left", padx=(0, 8))
+    seg(c, "Score from", v["sb_src"], list(SB_SOURCES), {SB_SOURCES[0]: "Players tap each rally on a phone at the court. Fully automatic export",
+                                                        SB_SOURCES[1]: "You tap who won each rally after detection"}, below=True)
+    r = line(c, "Phone page")
+    ctk.CTkLabel(r, text=scoring.url or "Could not open a port", font=H2, text_color=LIME).pack(side="left")
+    button(r, "Show QR for the court", lambda: court_qr(), height=30).pack(side="left", padx=10)
     seg(c, "First serve", v["sb_first"], list(SIDES))
     r = line(c, "Show")
     switch(r, "Server number", v["sb_server"])
     switch(r, "Games won", v["sb_games"])
     r = line(c, "")
     button(r, "Preview on this video", lambda: preview_board(), height=34).pack(side="left")
-    ctk.CTkLabel(c, text="Bottom left, with your logo small at the bottom right. Watch-folder runs skip it, since each rally needs a tap.",
+    ctk.CTkLabel(c, text="Bottom left, with your logo small at the bottom right. Phone scoring also works on watch-folder runs. Name recordings Court 1, Court 2... to use that court's taps.",
                  font=SMALL, text_color=CYAN, wraplength=520, justify="left").pack(anchor="w", padx=(112, 0), pady=(4, 0))
 
     # ---- 4 video output
@@ -1281,8 +1515,8 @@ def run_app():
         bar.set(0)
         o, out_dir = opts(), v["out"].get()
         state["src"] = path
-        if auto and o["sb"]:
-            log("Watch-folder run: the scoreboard is skipped, since each rally needs a tap.")
+        if auto and o["sb"] and o["sb_src"] == SB_SOURCES[1]:
+            log("Watch-folder run: tap-after-the-match scoring is skipped. Use phone scoring for automatic runs.")
         def work():
             try:
                 out, files, segs = process(path, out_dir, o, log, lambda f, t: msgs.put(("step", (f, t))),
@@ -1379,7 +1613,7 @@ def run_app():
         root.after(10000, lambda: watch_tick(sizes))
 
     show("Home")
-    root.protocol("WM_DELETE_WINDOW", lambda: (remember(), share.stop(), root.destroy()))
+    root.protocol("WM_DELETE_WINDOW", lambda: (remember(), share.stop(), scoring.stop(), root.destroy()))
     if trial_chip:
         trial_tick()
         if trial_left():
@@ -1421,6 +1655,11 @@ def selftest():
         sizes = {scoreboard_png(st, dict(sbs, style=style), 1920, 1080).size for pair in score_states([0, 1, 1, 0] * 6) for st in pair}
         assert len(sizes) == 1, (style, sizes)                      # every score draws on the same canvas
     assert out_size((1920, 1080), {"res": 1080}, True) == (606, 1080) and out_size((1280, 720), {"res": 1080}, False) == (1280, 720)
+    # phone taps: a PC clock 90 s ahead is corrected by lining taps up with rally ends
+    sh, n = align_shift([13 + 90, 20 + 90, 31 + 90, 52 + 90], [11.4, 18.0, 29.5, 35.0, 49.8])
+    assert -92 <= sh <= -89 and n == 4, (sh, n)
+    assert court_of("Court 2 - Sep 24 7PM.mp4") == 2 and court_of("match.mp4") is None
+    assert [len(g) for g in split_games([{"team": 0}, {"new": True}, {"team": 1}, {"team": 0}])] == [1, 2]
     assert hours_left(0, 3600) == 23 and hours_left(0, 25 * 3600) == 0 and hours_left(10000, 0) == 0   # set-back clock
     assert trial_left() is None or TRIAL_FLAG.exists()                  # source runs are the full version
     print("selftest ok")

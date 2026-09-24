@@ -1,4 +1,4 @@
-# Highlight Studio IO v3.3
+# Highlight Studio IO v3.4
 
 © 2026 LINKMEIO. All rights reserved. Licensed to Playhouse Pickle (Team Payaman Pickleball).
 
@@ -7,6 +7,12 @@ Desktop app that turns a pickleball match video into what players take home. v3.
 - **Longest rally**: the single longest exchange on its own.
 - **Full game**: the whole match.
 - **Clip per rally**: optional, off by default.
+- **Phone scoring (v3.4, default score source)**: the app serves a scoring page on the venue WiFi (port 8900; QR in the
+  Scoreboard page). Players tap "Team A/B won the rally" after each rally, with Undo and New match, per court (1-6).
+  Taps are stamped by this PC's clock and saved to %APPDATA%\HighlightStudioIO	aps.json. On export (also watch-folder
+  runs) the app takes that court's taps (court read from the file name, e.g. "Court 1 ..."), corrects clock differences
+  up to 10 min by lining taps up with detected rally ends, and changes the board as each point ends. Tested with a
+  90 s clock error and a stray tap from another court. The LAN page has no PIN: anyone on the venue WiFi can tap.
 - **Scoreboard** (optional, off by default): bottom left, logo small at the bottom right. After detection, the
   operator taps who won each rally (1 / 2 / 0 keys) and the app keeps the official score: side-out doubles
   (0-0-2 start, server 1/2), side-out singles or rally scoring, games to 11/15/21, win by 2. Styles: Broadcast,
