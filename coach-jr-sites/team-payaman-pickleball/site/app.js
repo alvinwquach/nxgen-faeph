@@ -89,7 +89,7 @@ function guestSend() {
 }
 
 // ---------- booking widget ----------
-function isBooked(d, c, h) { return S.taken.has(d + '-' + c + '-' + h) || (d * 7 + c * 13 + h * 5) % 9 < 3; }
+function isBooked(d, c, h) { return S.taken.has(d + '-' + c + '-' + h) || (d ? (d * 7 + c * 13 + h * 5) % 9 < 3 : typeof DB !== 'undefined' && !!DB.schedule[c + '-' + h]); }   // today = console schedule; later days = demo pattern
 function isOpenPlay(c, h) { return c === 2 && h >= HOURS.playFrom && h < HOURS.playTo; }
 function renderBooker() {
   const days = [...Array(7)].map((_, i) => { const d = new Date(NOW + i * DAY); return i === 0 ? 'Today' : d.toLocaleDateString('en-PH', { weekday: 'short', day: 'numeric' }); });
@@ -124,12 +124,13 @@ function pay(method) {
     p.hours.forEach(h => { S.taken.add(p.day + '-' + p.court + '-' + h); if (p.day === 0 && typeof DB !== 'undefined') DB.schedule[p.court + '-' + h] = { who: S.user ? S.user.name : 'Online booking', st: 'Booked' }; });
     MY_BOOKINGS.unshift({ what: p.label.split(' · ')[0], when: p.label.split(' · ')[1], st: 'Upcoming' }); S.sel.hours = []; renderBooker(); renderMyBookings();
     toast('Booked via ' + method + (S.user ? '. See you on court' : '. Log in to earn badges for every hour'));
-    if (S.user) addProgress('hours', p.hours.length);
+    if (S.user) addProgress({ hours: p.hours.length, matches: 1 });
   }
   if (p.kind === 'unlock') { const m = MATCHES.find(x => x.id === p.id); m.locked = false; renderMatches(); toast('Unlocked via ' + method + '. Yours to keep'); }
   if (p.kind === 'wifi') showQR('WiFi voucher ready', p.label + ' · connect at the venue', 'PLAYHOUSE-WIFI-' + Date.now());
 }
-function buyWifi(i) { const w = WIFI[i]; S.pay = { kind: 'wifi', amt: PRICES[w.k], label: w.n + ' WiFi pass' }; $('#payTitle').textContent = 'Buy ' + w.n + ' WiFi'; $('#payDesc').textContent = 'Voucher QR appears right after payment.'; $('#payAmt').textContent = peso(PRICES[w.k]); openDlg('dlgPay'); }
+const wifiName = i => SITE['WiFi · Plan ' + (i + 1) + ' name'] ?? WIFI[i].n;
+function buyWifi(i) { const w = WIFI[i], n = wifiName(i); S.pay = { kind: 'wifi', amt: PRICES[w.k], label: n + ' WiFi pass' }; $('#payTitle').textContent = 'Buy ' + n + ' WiFi'; $('#payDesc').textContent = 'Voucher QR appears right after payment.'; $('#payAmt').textContent = peso(PRICES[w.k]); openDlg('dlgPay'); }
 function unlock(id) { const m = MATCHES.find(x => x.id === id); S.pay = { kind: 'unlock', id, amt: PRICES.unlock, label: 'Keep ' + m.id + ' forever' }; $('#payTitle').textContent = 'Keep this match forever'; $('#payDesc').textContent = m.t + '. Full game plus ' + m.clips + ' highlight clips, no expiry, HD download.'; $('#payAmt').textContent = peso(PRICES.unlock); openDlg('dlgPay'); }
 
 // ---------- portal ----------
@@ -145,7 +146,7 @@ function renderMatches() {
         <span class="absolute top-3 right-3 badge ${m.locked ? 'b-gold' : 'b-lime'} num" ${m.locked ? `data-exp="${m.exp}"` : ''}>${m.locked ? countdown(m.exp - Date.now()) : 'Kept forever'}</span></div>
       <div class="p-5">
         <h3 class="font-bold">${m.t}</h3>
-        <p class="text-xs text-muted mt-1 num">${m.court} · ${m.date} · #${m.id} · <span class="text-lime">${m.clips} AI highlight clips</span></p>
+        <p class="text-xs text-muted mt-1 num">${m.court} · ${m.date} · #${m.id} · <span class="text-lime">${m.clips} highlight clips</span></p>
         <div class="flex flex-wrap gap-2 mt-4">
           <button class="btn btn-ghost !py-2 !px-3 text-sm" onclick="showQR('Full game ${m.id}','Scan to watch on your phone','${location.origin}/?watch=game/${m.id}')"><i class="fa-solid fa-film"></i>Full game</button>
           <button class="btn btn-ghost !py-2 !px-3 text-sm" onclick="showQR('Highlights ${m.id}','${m.clips} clips, ready to post','${location.origin}/?watch=reel/${m.id}')"><i class="fa-solid fa-wand-magic-sparkles"></i>Highlights</button>
@@ -206,9 +207,9 @@ function renderAchievements() {
     ${on ? `<button class="btn btn-lime !py-1.5 !px-3 text-xs mt-4" onclick="openShare(${i})"><i class="fa-solid fa-share-nodes"></i>Share</button>`
          : `<div class="bar mt-4 w-full"><span style="width:${Math.min(100, PLAYER[b.track] / b.need * 100)}%"></span></div>`}</article>`; }).join('');
 }
-function addProgress(track, n) {
+function addProgress(add) {
   const before = BADGES.filter(unlocked);
-  PLAYER[track] += n; renderAchievements(); applyConfig();
+  for (const k in add) PLAYER[k] += add[k]; renderAchievements(); applyConfig();
   const fresh = BADGES.filter(b => unlocked(b) && !before.includes(b));
   if (fresh.length) setTimeout(() => openShare(BADGES.indexOf(fresh[fresh.length - 1]), true), 900);
 }
@@ -234,7 +235,7 @@ function openShare(i, fresh) {
   $('#shTitle').textContent = `${bText(b, 'name')} · ${b.need} ${unit(b)}`;
   $('#shCaption').value = caption(b); shareFmt(SH.fmt); openDlg('dlgShare');
 }
-function shareFmt(f) { SH.fmt = f; document.querySelectorAll('[data-fmt]').forEach(el => el.setAttribute('aria-pressed', el.dataset.fmt === f)); drawShare(); }
+function shareFmt(f) { SH.fmt = f; document.querySelectorAll('[data-fmt]').forEach(el => el.setAttribute('aria-pressed', el.dataset.fmt === f)); SH.drawn = drawShare(); }
 function fit(x, text, max, size, weight, fam) { do { x.font = `${weight} ${size}px ${fam}`; size -= 4; } while (x.measureText(text).width > max && size > 20); }
 async function drawShare() {
   const b = BADGES[SH.i], story = SH.fmt === 'story', W = 1080, H = story ? 1920 : 1350, c = $('#shCanvas'), x = c.getContext('2d');
@@ -268,10 +269,10 @@ async function drawShare() {
   x.fillStyle = '#DDE01D'; x.font = '700 40px Geist'; x.fillText('Your pickleball playground', W / 2, H - 150);
   x.fillStyle = '#9A9BA2'; x.font = '500 32px Geist'; x.fillText('Molino, Bacoor · #playhousepickleballco', W / 2, H - 96);
 }
-const shareBlob = () => new Promise(r => $('#shCanvas').toBlob(r, 'image/png'));
+const shareBlob = async () => { await SH.drawn; return new Promise(r => $('#shCanvas').toBlob(r, 'image/png')); };
 async function shareNow() {
   const file = new File([await shareBlob()], 'playhouse-pickle-achievement.png', { type: 'image/png' }), text = $('#shCaption').value;
-  if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], text }); } catch (e) {} return; }
+  if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], text }); return; } catch (e) { if (e.name === 'AbortError') return; } }
   await shareDownload(); shareCopy('Image saved and caption copied. Post it on Facebook, Instagram or TikTok.');
 }
 async function shareDownload() { const a = document.createElement('a'); a.href = URL.createObjectURL(await shareBlob()); a.download = 'playhouse-pickle-achievement.png'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1500); }
@@ -300,4 +301,5 @@ function initMotion() {
 
 // ---------- boot ----------
 renderHome(); renderMyBookings(); refreshSite();
+if (new URLSearchParams(location.search).has('watch')) setTimeout(() => toast('Demo link. In the live build this opens the match video on your phone.'), 600);
 initMotion(); // deferred script: DOM is parsed and GSAP already loaded

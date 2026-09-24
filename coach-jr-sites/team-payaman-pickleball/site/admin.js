@@ -37,7 +37,7 @@ const OWNER_LOGINS = ['jhoopin3', 'filamelitebasketball']; // demo gate: client-
 function custRows() {
   const q = (VIEWS.q || '').toLowerCase(), f = VIEWS.f || 'All';
   const rows = DB.customers.filter(c => (f === 'All' || c.t === f) && (c.n + c.c).toLowerCase().includes(q));
-  return rows.map(c => `<tr><td class="font-semibold">${c.n}</td><td class="text-muted num">${c.c}</td><td>${badge(c.t)}</td><td class="text-muted text-xs">${c.src || ''}</td><td class="text-muted num">${c.last}</td><td class="text-right num">${peso(c.spend)}</td><td class="text-right">${c.t !== 'Player' ? `<button class="text-xs text-lime hover:underline" onclick="promote('${c.c}')">Promote</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="7" class="text-muted">No matches.</td></tr>';
+  return rows.map(c => `<tr><td class="font-semibold">${c.n}</td><td class="text-muted num">${c.c}</td><td>${badge(c.t)}</td><td class="text-muted text-xs">${c.src || ''}</td><td class="text-muted num">${c.last}</td><td class="text-right num">${peso(c.spend)}</td><td class="text-right">${c.t !== 'Player' ? `<button class="text-xs text-lime hover:underline" onclick="promote(${q(c.c)})">Promote</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="7" class="text-muted">No matches.</td></tr>';
 }
 const STAGE = { Lead: 'b-mute', Member: 'b-gold', Player: 'b-lime' };
 const STB = { Paid: 'b-lime', Booked: 'b-gold', 'Checked-in': 'b-sky', Verified: 'b-lime', Pending: 'b-gold', Delivered: 'b-lime', Unlocked: 'b-sky', Processing: 'b-gold', Recording: 'b-red', Active: 'b-lime', Used: 'b-mute' };
@@ -106,14 +106,14 @@ const VIEWS = {
     const f = VIEWS.f || 'All';
     const count = t => DB.customers.filter(c => c.t === t).length;
     return `<div class="grid gap-5"><div class="grid grid-cols-3 gap-4">${kpi(count('Lead'), 'Leads', 'kiosk and sign-ups')}${kpi(count('Member'), 'Members', 'account holders', 'text-gold')}${kpi(count('Player'), 'Players', 'regulars')}</div>
-    ${panel('Customer database', `<div class="flex flex-wrap gap-2 mb-4"><input style="max-width:260px" placeholder="Search name, email, mobile" aria-label="Search customers" value="${VIEWS.q || ''}" oninput="VIEWS.q=this.value;$('#custRows').innerHTML=custRows()">${['All', 'Lead', 'Member', 'Player'].map(t => `<button class="chip text-sm" aria-pressed="${t === f}" onclick="VIEWS.f='${t}';renderAdmin()">${t}</button>`).join('')}</div>
+    ${panel('Customer database', `<div class="flex flex-wrap gap-2 mb-4"><input style="max-width:260px" placeholder="Search name, email, mobile" aria-label="Search customers" value="${esc(VIEWS.q || '')}" oninput="VIEWS.q=this.value;$('#custRows').innerHTML=custRows()">${['All', 'Lead', 'Member', 'Player'].map(t => `<button class="chip text-sm" aria-pressed="${t === f}" onclick="VIEWS.f='${t}';renderAdmin()">${t}</button>`).join('')}</div>
       <div class="overflow-x-auto"><table class="min-w-[640px]"><thead><tr><th>Name</th><th>Contact</th><th>Stage</th><th>Source</th><th>Last visit</th><th class="text-right">Spend</th><th></th></tr></thead><tbody id="custRows">${custRows()}</tbody></table></div>`, `<div class="flex gap-2"><button class="btn btn-ghost !py-2 text-sm" onclick="scCampaign()"><i class="fa-solid fa-paper-plane"></i>Email</button><button class="btn btn-lime !py-2 text-sm" onclick="exportXLSX()"><i class="fa-solid fa-file-excel"></i>Export Excel</button></div>`)}</div>`;
   },
   picklecam() {
     const clips = DB.sessions.reduce((a, s) => a + s.clips, 0);
     return `<div class="grid gap-5"><div class="grid grid-cols-2 xl:grid-cols-4 gap-4">${kpi(DB.sessions.length, 'Sessions today')}${kpi(clips, 'Highlight clips generated')}${kpi('3m 40s', 'Avg. stop to highlights')}${kpi(DB.sessions.filter(s => s.st === 'Unlocked').length, 'Kept forever today', '', 'text-gold')}</div>
     ${panel('Recording queue', `<div class="overflow-x-auto"><table class="min-w-[620px]"><thead><tr><th>Session</th><th>Court</th><th>Delivered to</th><th>Start</th><th>Full game</th><th>Highlights</th><th>Status</th><th></th></tr></thead><tbody>
-      ${DB.sessions.map(s => `<tr><td class="font-semibold num">#${s.id}</td><td>${s.court}</td><td class="text-muted num">${s.who}</td><td class="num">${s.start}</td><td class="num">${s.mins ? s.mins + ' min' : 'live'}</td><td class="num">${s.clips || '...'}</td><td>${badge(s.st)}</td><td class="text-right">${s.st === 'Delivered' || s.st === 'Unlocked' ? `<button class="text-xs text-lime hover:underline" onclick="toast('Link re-sent to ${s.who}')">Resend</button>` : ''}</td></tr>`).join('')}
+      ${DB.sessions.map(s => `<tr><td class="font-semibold num">#${s.id}</td><td>${s.court}</td><td class="text-muted num">${s.who}</td><td class="num">${s.start}</td><td class="num">${s.mins ? s.mins + ' min' : 'live'}</td><td class="num">${s.clips || '...'}</td><td>${badge(s.st)}</td><td class="text-right">${s.st === 'Delivered' || s.st === 'Unlocked' ? `<button class="text-xs text-lime hover:underline" onclick="toast(${q('Link re-sent to ' + s.who)})">Resend</button>` : ''}</td></tr>`).join('')}
     </tbody></table></div>`, `<button class="btn btn-lime !py-2 text-sm" onclick="scCam()"><i class="fa-solid fa-circle-dot"></i>Start session</button>`)}</div>`;
   },
   payments() {
@@ -124,7 +124,7 @@ const VIEWS = {
     </tbody></table></div>`)}</div>`;
   },
   wifi() {
-    return `<div class="grid gap-5">${panel('Sell a voucher', `<div class="grid sm:grid-cols-3 gap-3">${[['1 Hour', DB.prices.w1], ['1 Day', DB.prices.w2], ['1 Week', DB.prices.w3]].map(w => `<button class="card p-4 text-left hover:border-lime" onclick="issueVoucher('${w[0]}')"><p class="font-bold">${w[0]}</p><p class="display text-2xl text-lime num mt-1">${peso(w[1])}</p></button>`).join('')}</div>`)}
+    return `<div class="grid gap-5">${panel('Sell a voucher', `<div class="grid sm:grid-cols-3 gap-3">${WIFI.map((w, i) => [wifiName(i), PRICES[w.k]]).map(w => `<button class="card p-4 text-left hover:border-lime" onclick="issueVoucher(${q(w[0])})"><p class="font-bold">${w[0]}</p><p class="display text-2xl text-lime num mt-1">${peso(w[1])}</p></button>`).join('')}</div>`)}
     ${panel('Issued vouchers', `<table><thead><tr><th>Code</th><th>Plan</th><th>For</th><th>Status</th></tr></thead><tbody>${DB.vouchers.map(v => `<tr><td class="num font-semibold">${v.code}</td><td>${v.plan}</td><td>${v.who}</td><td>${badge(v.st)}</td></tr>`).join('')}</tbody></table>`)}</div>`;
   },
   data() {
@@ -134,7 +134,7 @@ const VIEWS = {
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">${Object.entries(t).map(([n, r]) => `<div class="card p-3"><p class="font-semibold text-sm">${n}</p><p class="text-xs text-muted num">${r.length} rows</p></div>`).join('')}</div>`,
       `<div class="flex gap-2"><label class="btn btn-ghost !py-2 text-sm cursor-pointer" style="margin:0;color:inherit;font-size:14px"><i class="fa-solid fa-file-import"></i>Import<input type="file" accept=".xlsx,.xls" class="hide" onchange="importXLSX(this.files[0])"></label><button class="btn btn-lime !py-2 text-sm" onclick="exportXLSX()"><i class="fa-solid fa-file-excel"></i>Export Excel</button></div>`)}
     ${panel('Connect their platform', `<p class="text-sm text-muted mb-4">Already on a membership or booking system? Paste its API link and the console syncs with it, using the same sheets as the Excel file. No API? Use Excel export and import.</p>
-      <div class="grid sm:grid-cols-2 gap-4"><div><label for="plName">Platform</label><input id="plName" placeholder="e.g. their gym membership app" value="${cfg.name || ''}"></div><div><label for="plUrl">API link (https)</label><input id="plUrl" type="url" placeholder="https://..." value="${cfg.url || ''}"></div></div>
+      <div class="grid sm:grid-cols-2 gap-4"><div><label for="plName">Platform</label><input id="plName" placeholder="e.g. their gym membership app" value="${esc(cfg.name || '')}"></div><div><label for="plUrl">API link (https)</label><input id="plUrl" type="url" placeholder="https://..." value="${esc(cfg.url || '')}"></div></div>
       <p class="text-xs text-muted mt-3">Status: ${cfg.url ? `linked to <b class="text-lime">${cfg.name || cfg.url}</b>` : 'not linked · the Excel soft copy is the backend'}</p>`,
       `<div class="flex gap-2"><button class="btn btn-ghost !py-2 text-sm" onclick="syncPlatform('pull')"><i class="fa-solid fa-cloud-arrow-down"></i>Pull</button><button class="btn btn-lime !py-2 text-sm" onclick="syncPlatform('push')"><i class="fa-solid fa-cloud-arrow-up"></i>Push</button></div>`)}</div>`;
   },
@@ -157,6 +157,7 @@ const VIEWS = {
   }
 };
 const esc = v => String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+const q = v => esc(JSON.stringify(String(v)));   // a JS string literal safe inside onclick="..."
 function setPrice(k, v) { PRICES[k] = Math.max(0, Math.round(+v) || 0); saveConfig(); refreshSite(); toast('Price updated on the site'); }
 function setHour(k, v) {
   const next = { ...HOURS, [k]: +v };
@@ -170,10 +171,10 @@ function resetConfig() {
   saveConfig(); refreshSite(); renderAdmin(); toast('Back to the original');
 }
 const CAMPAIGNS = [
-  { n: 'Your highlights expire soon', d: 'Grace-period reminder with a one-tap ₱99 keep-forever link.', aud: () => 4 + DB.customers.filter(c => c.t === 'Lead').length },
-  { n: 'Open play tonight', d: '5PM to 9PM block, ₱250, first come first served.', aud: () => 210 + DB.customers.length },
+  { n: 'Your highlights expire soon', get d() { return `Grace-period reminder with a one-tap ${peso(PRICES.unlock)} keep-forever link.`; }, aud: () => 4 + DB.customers.filter(c => c.t === 'Lead').length },
+  { n: 'Open play tonight', get d() { return `${hourLabel(HOURS.playFrom)} to ${hourLabel(HOURS.playTo)}, ${peso(PRICES.open)} per block, first come first served.`; }, aud: () => 210 + DB.customers.length },
   { n: 'Become a member', d: 'Invite leads to a free account and member rates.', aud: () => DB.customers.filter(c => c.t === 'Lead').length },
-  { n: 'Badge unlocked', d: 'Automatic: when a player hits 10 matches or 10 court hours, email their shareable badge card and reward.', aud: () => DB.customers.filter(c => c.t !== 'Lead').length },
+  { n: 'Badge unlocked', d: 'Suggested automation (not active in the demo): when a player earns a badge, email their shareable badge card and reward.', aud: () => DB.customers.filter(c => c.t !== 'Lead').length },
   { n: 'Tournament sponsors wanted', d: 'Call for 2027 Playhouse Pickle Tournament partners.', aud: () => 38 }
 ];
 
@@ -217,15 +218,15 @@ function saveBooking() {
 function cycleSlot(c, h) { const b = DB.schedule[c + '-' + h], order = ['Booked', 'Paid', 'Checked-in']; b.st = order[(order.indexOf(b.st) + 1) % 3]; toast(b.who + ': ' + b.st); renderAdmin(); }
 function scCheckin() {
   const due = Object.entries(DB.schedule).filter(([, b]) => b.st !== 'Checked-in');
-  drawer(`<h2 class="font-bold text-xl mb-5">Check in</h2>${due.length ? due.map(([k, b]) => { const [c, h] = k.split('-').map(Number); return `<div class="card p-4 mb-3 flex justify-between items-center"><div><p class="font-semibold">${b.who}</p><p class="text-xs text-muted">Court ${c + 1} · ${hourLabel(h)} · ${b.st}</p></div><button class="btn btn-lime !py-1.5 !px-3 text-xs" onclick="DB.schedule['${k}'].st='Checked-in';toast('${b.who} checked in');scCheckin();renderAdmin()">Check in</button></div>`; }).join('') : '<p class="text-muted">Everyone is checked in.</p>'}`);
+  drawer(`<h2 class="font-bold text-xl mb-5">Check in</h2>${due.length ? due.map(([k, b]) => { const [c, h] = k.split('-').map(Number); return `<div class="card p-4 mb-3 flex justify-between items-center"><div><p class="font-semibold">${b.who}</p><p class="text-xs text-muted">Court ${c + 1} · ${hourLabel(h)} · ${b.st}</p></div><button class="btn btn-lime !py-1.5 !px-3 text-xs" onclick="DB.schedule['${k}'].st='Checked-in';toast(${q(b.who + ' checked in')});scCheckin();renderAdmin()">Check in</button></div>`; }).join('') : '<p class="text-muted">Everyone is checked in.</p>'}`);
 }
 function scCam() {
-  drawer(`<h2 class="font-bold text-xl mb-5">Start a Your Brand session</h2><div class="space-y-4">
+  drawer(`<h2 class="font-bold text-xl mb-5">Start a recording session</h2><div class="space-y-4">
     <div><label for="cCt">Court</label><select id="cCt"><option>Court 1</option><option>Court 2</option><option>Court 3</option></select></div>
     <div><label for="cE">Deliver to (email)</label><input id="cE" type="email" placeholder="player@gmail.com"></div>
     <p id="cErr" class="hide text-sm text-red-300">Enter a valid email so the video can be delivered.</p>
     <button class="btn btn-lime w-full justify-center" onclick="startCam()"><i class="fa-solid fa-circle-dot"></i>Start recording</button>
-    <p class="text-xs text-muted">Demo: the session records, processes, then delivers the full game plus AI highlights.</p></div>`);
+    <p class="text-xs text-muted">Demo: the session records, processes, then delivers the full game plus highlights.</p></div>`);
 }
 function startCam() {
   const e = $('#cE').value.trim(); if (!EMAIL.test(e)) return $('#cErr').classList.remove('hide');
@@ -235,7 +236,7 @@ function startCam() {
   setTimeout(() => { s.st = 'Processing'; s.mins = 52; if (SEC === 'picklecam' && S.admin) renderAdmin(); }, 3500);
   setTimeout(() => { s.st = 'Delivered'; s.clips = 13; if (SEC === 'picklecam' && S.admin) renderAdmin(); toast(`#${s.id}: full game + 13 highlights sent to ${e}`); }, 8000);
 }
-function scWifi() { drawer(`<h2 class="font-bold text-xl mb-5">Sell WiFi</h2><div class="grid gap-3">${[['1 Hour', DB.prices.w1], ['1 Day', DB.prices.w2], ['1 Week', DB.prices.w3]].map(w => `<button class="card p-4 text-left hover:border-lime flex justify-between items-center" onclick="issueVoucher('${w[0]}')"><b>${w[0]}</b><span class="display text-xl text-lime num">${peso(w[1])}</span></button>`).join('')}</div>`); }
+function scWifi() { drawer(`<h2 class="font-bold text-xl mb-5">Sell WiFi</h2><div class="grid gap-3">${WIFI.map((w, i) => [wifiName(i), PRICES[w.k]]).map(w => `<button class="card p-4 text-left hover:border-lime flex justify-between items-center" onclick="issueVoucher(${q(w[0])})"><b>${w[0]}</b><span class="display text-xl text-lime num">${peso(w[1])}</span></button>`).join('')}</div>`); }
 function issueVoucher(plan) { const code = 'PH-WF-' + (3382 + DB.vouchers.length); DB.vouchers.unshift({ code, plan, who: 'Walk-in', st: 'Active' }); if (SEC === 'wifi') renderAdmin(); showQR('Voucher ' + code, plan + ' · connect to Playhouse-Guest', code); }
 function scPayments() {
   const pend = DB.payments.map((p, i) => [p, i]).filter(([p]) => p.st === 'Pending');
@@ -245,7 +246,7 @@ function verifyPay(i) { DB.payments[i].st = 'Verified'; toast('Payment ' + DB.pa
 function scCampaign() { drawer(`<h2 class="font-bold text-xl mb-5">Send a campaign</h2>${CAMPAIGNS.map((c, i) => `<div class="card p-4 mb-3"><p class="font-bold">${c.n}</p><p class="text-xs text-muted mt-1">${c.d}</p><button class="btn btn-lime !py-1.5 !px-3 text-xs mt-3" onclick="sendCampaign(${i})">Send to ${c.aud()}</button></div>`).join('')}`); }
 function sendCampaign(i) { const c = CAMPAIGNS[i]; DB.sent.unshift({ name: c.n, aud: c.aud(), when: 'Just now' }); closeDlgs(); toast(`"${c.n}" queued for ${c.aud()} recipients`); if (S.admin) renderAdmin(); }
 function scRoster() {
-  drawer(`<h2 class="font-bold text-xl mb-1">Open play tonight</h2><p class="text-sm text-muted mb-5">5PM to 9PM · Court 3 · <span class="num">${DB.roster.length}/16</span> players</p>
+  drawer(`<h2 class="font-bold text-xl mb-1">Open play tonight</h2><p class="text-sm text-muted mb-5">${hourLabel(HOURS.playFrom)} to ${hourLabel(HOURS.playTo)} · Court 3 · <span class="num">${DB.roster.length}/16</span> players</p>
   <div class="bar mb-5"><span style="width:${DB.roster.length / 16 * 100}%"></span></div>
   <ol class="space-y-2 mb-5">${DB.roster.map((n, i) => `<li class="card p-3 flex justify-between"><span><span class="text-muted num mr-2">${i + 1}</span>${n}</span><span class="badge b-lime">₱${DB.prices.open}</span></li>`).join('')}</ol>
   <div class="flex gap-2"><input id="rN" placeholder="Add walk-in name"><button class="btn btn-lime" onclick="const v=$('#rN').value.trim();if(v&&DB.roster.length<16){DB.roster.push(v);scRoster()}">Add</button></div>`);
@@ -277,7 +278,8 @@ function loadTables(t) { // inverse of tables(); sheets that are missing stay as
   if (t.Bookings) DB.schedule = Object.fromEntries(t.Bookings.map(r => [(r.Court - 1) + '-' + r['Hour (24h)'], { who: r.Player, st: r.Status }]));
   if (t['Open play']) DB.roster = t['Open play'].map(r => r.Player);
   if (t.Prices) t.Prices.forEach(r => { if (r.Setting in PRICES) PRICES[r.Setting] = +r.PHP; });
-  if (t.Hours) t.Hours.forEach(r => { if (r.Setting in HOURS) HOURS[r.Setting] = +r['Hour (24h)']; });
+  if (t.Hours) { const h = { ...HOURS }; t.Hours.forEach(r => { if (r.Setting in h) h[r.Setting] = +r['Hour (24h)']; });
+    if (h.open < h.close && h.playFrom < h.playTo) Object.assign(HOURS, h); else toast('Hours sheet skipped: opening must be before closing.'); }
   if (t['Site content']) t['Site content'].forEach(r => { if (!(r.Field in CFG_DEFAULT)) return; const v = String(r.Value ?? ''); if (v === CFG_DEFAULT[r.Field]) delete SITE[r.Field]; else SITE[r.Field] = v; });
   if (t.Prices || t.Hours || t['Site content']) { saveConfig(); refreshSite(); }
   return Object.keys(t).filter(n => n in COLS || EXTRA.includes(n)).length;
@@ -320,3 +322,4 @@ document.addEventListener('keydown', e => {
   if (!S.admin || $('#screen-admin').classList.contains('hide') || document.querySelector('dialog[open]') || /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
   const i = +e.key - 1; if (i >= 0 && i < SHORTCUTS.length) { e.preventDefault(); document.querySelectorAll('.shortcut')[i].click(); }
 });
+renderBooker();
