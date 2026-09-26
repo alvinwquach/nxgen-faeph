@@ -1,16 +1,16 @@
 // Owner console: shortcut panel + main operations panel. Demo data, in-memory; Excel workbook = soft-copy backend.
 const DB = {
   customers: [
-    { n: 'Patricia Villanueva', c: 'patvilla@gmail.com', t: 'Player', last: 'Sep 22', spend: 4820, src: 'Booking' },
-    { n: 'Marco Rivera', c: '+63 917 442 1908', t: 'Member', last: 'Sep 21', spend: 2650, src: 'Sign-up' },
-    { n: 'Denise Ocampo', c: 'denise.ocampo@gmail.com', t: 'Lead', last: 'Sep 20', spend: 0, src: 'Kiosk guest' },
-    { n: 'JR Bautista', c: '+63 928 771 3345', t: 'Player', last: 'Sep 20', spend: 6110, src: 'Booking' },
-    { n: 'Kyla Mendoza', c: 'kyla.m@gmail.com', t: 'Lead', last: 'Sep 19', spend: 250, src: 'Open play' },
-    { n: 'Aaron Salcedo', c: '+63 906 220 4471', t: 'Member', last: 'Sep 18', spend: 1980, src: 'Sign-up' },
-    { n: 'Bianca Torres', c: 'bianca.torres@gmail.com', t: 'Lead', last: 'Sep 18', spend: 0, src: 'Kiosk guest' },
-    { n: 'Miguel Ramos', c: '+63 915 883 2210', t: 'Player', last: 'Sep 17', spend: 5230, src: 'Booking' },
-    { n: 'Carla Dizon', c: 'carla.dizon@yahoo.com', t: 'Lead', last: 'Sep 16', spend: 0, src: 'Kiosk guest' },
-    { n: 'Paolo Lim', c: '+63 919 305 7782', t: 'Member', last: 'Sep 15', spend: 1450, src: 'Walk-in' }
+    { n: 'Patricia Villanueva', c: 'patvilla@gmail.com', t: 'Player', last: 'Sep 22', spend: 4820, src: 'Booking', ok: 'Aug 30, 2026', mkt: 'Aug 30, 2026' },
+    { n: 'Marco Rivera', c: '+63 917 442 1908', t: 'Member', last: 'Sep 21', spend: 2650, src: 'Sign-up', ok: 'Sep 2, 2026', mkt: 'Sep 2, 2026' },
+    { n: 'Denise Ocampo', c: 'denise.ocampo@gmail.com', t: 'Lead', last: 'Sep 20', spend: 0, src: 'Kiosk guest', ok: 'Sep 20, 2026', mkt: 'Sep 20, 2026' },
+    { n: 'JR Bautista', c: '+63 928 771 3345', t: 'Player', last: 'Sep 20', spend: 6110, src: 'Booking', ok: 'Aug 28, 2026' },
+    { n: 'Kyla Mendoza', c: 'kyla.m@gmail.com', t: 'Lead', last: 'Sep 19', spend: 250, src: 'Open play', ok: 'Sep 19, 2026', mkt: 'Sep 19, 2026' },
+    { n: 'Aaron Salcedo', c: '+63 906 220 4471', t: 'Member', last: 'Sep 18', spend: 1980, src: 'Sign-up', ok: 'Sep 5, 2026', mkt: 'Sep 5, 2026' },
+    { n: 'Bianca Torres', c: 'bianca.torres@gmail.com', t: 'Lead', last: 'Sep 18', spend: 0, src: 'Kiosk guest', ok: 'Sep 18, 2026' },
+    { n: 'Miguel Ramos', c: '+63 915 883 2210', t: 'Player', last: 'Sep 17', spend: 5230, src: 'Booking', ok: 'Sep 1, 2026', mkt: 'Sep 1, 2026' },
+    { n: 'Carla Dizon', c: 'carla.dizon@yahoo.com', t: 'Lead', last: 'Sep 16', spend: 0, src: 'Kiosk guest', ok: 'Sep 16, 2026' },
+    { n: 'Paolo Lim', c: '+63 919 305 7782', t: 'Member', last: 'Sep 15', spend: 1450, src: 'Walk-in', ok: 'Sep 15, 2026' }
   ],
   schedule: { '0-8': { who: 'Patricia V.', st: 'Paid' }, '1-9': { who: 'Walk-in', st: 'Booked' }, '0-10': { who: 'JR Bautista', st: 'Checked-in' }, '1-16': { who: 'Aaron S.', st: 'Paid' }, '0-18': { who: 'Miguel R.', st: 'Booked' }, '1-19': { who: 'Barkada DUPR', st: 'Paid' } },
   roster: ['Kyla Mendoza', 'Paolo Lim', 'Denise Ocampo', 'Rafa Cruz', 'Joy Santos', 'Enzo Tan', 'Mae Reyes', 'Luis Ong'],
@@ -35,9 +35,9 @@ const SHORTCUTS = [['New booking', 'fa-calendar-plus', 'scBooking()'], ['Check i
 let SEC = 'overview';
 const OWNER_LOGINS = ['jhoopin3', 'filamelitebasketball']; // demo gate: client-side only, real auth comes with Supabase
 function custRows() {
-  const q = (VIEWS.q || '').toLowerCase(), f = VIEWS.f || 'All';
-  const rows = DB.customers.filter(c => (f === 'All' || c.t === f) && (c.n + c.c).toLowerCase().includes(q));
-  return rows.map(c => `<tr><td class="font-semibold">${c.n}</td><td class="text-muted num">${c.c}</td><td>${badge(c.t)}</td><td class="text-muted text-xs">${c.src || ''}</td><td class="text-muted num">${c.last}</td><td class="text-right num">${peso(c.spend)}</td><td class="text-right">${c.t !== 'Player' ? `<button class="text-xs text-lime hover:underline" onclick="promote(${q(c.c)})">Promote</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="7" class="text-muted">No matches.</td></tr>';
+  const s = (VIEWS.q || '').toLowerCase(), f = VIEWS.f || 'All';   // not "q": that name is the quoting helper used below
+  const rows = DB.customers.filter(c => (f === 'All' || c.t === f) && (c.n + c.c).toLowerCase().includes(s));
+  return rows.map(c => `<tr><td class="font-semibold">${c.n}</td><td class="text-muted num">${c.c}</td><td>${badge(c.t)}</td><td class="text-muted text-xs">${c.src || ''}</td><td>${c.mkt ? `<span class="badge b-lime" title="Opted in ${esc(c.mkt)}">Yes</span>` : '<span class="text-muted text-xs">No</span>'}</td><td class="text-muted num">${c.last}</td><td class="text-right num">${peso(c.spend)}</td><td class="text-right">${c.t !== 'Player' ? `<button class="text-xs text-lime hover:underline" onclick="promote(${q(c.c)})">Promote</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="8" class="text-muted">No matches.</td></tr>';
 }
 const STAGE = { Lead: 'b-mute', Member: 'b-gold', Player: 'b-lime' };
 const STB = { Paid: 'b-lime', Booked: 'b-gold', 'Checked-in': 'b-sky', Verified: 'b-lime', Pending: 'b-gold', Delivered: 'b-lime', Unlocked: 'b-sky', Processing: 'b-gold', Recording: 'b-red', Active: 'b-lime', Used: 'b-mute' };
@@ -107,7 +107,7 @@ const VIEWS = {
     const count = t => DB.customers.filter(c => c.t === t).length;
     return `<div class="grid gap-5"><div class="grid grid-cols-3 gap-4">${kpi(count('Lead'), 'Leads', 'kiosk and sign-ups')}${kpi(count('Member'), 'Members', 'account holders', 'text-gold')}${kpi(count('Player'), 'Players', 'regulars')}</div>
     ${panel('Customer database', `<div class="flex flex-wrap gap-2 mb-4"><input style="max-width:260px" placeholder="Search name, email, mobile" aria-label="Search customers" value="${esc(VIEWS.q || '')}" oninput="VIEWS.q=this.value;$('#custRows').innerHTML=custRows()">${['All', 'Lead', 'Member', 'Player'].map(t => `<button class="chip text-sm" aria-pressed="${t === f}" onclick="VIEWS.f='${t}';renderAdmin()">${t}</button>`).join('')}</div>
-      <div class="overflow-x-auto"><table class="min-w-[640px]"><thead><tr><th>Name</th><th>Contact</th><th>Stage</th><th>Source</th><th>Last visit</th><th class="text-right">Spend</th><th></th></tr></thead><tbody id="custRows">${custRows()}</tbody></table></div>`, `<div class="flex gap-2"><button class="btn btn-ghost !py-2 text-sm" onclick="scCampaign()"><i class="fa-solid fa-paper-plane"></i>Email</button><button class="btn btn-lime !py-2 text-sm" onclick="exportXLSX()"><i class="fa-solid fa-file-excel"></i>Export Excel</button></div>`)}</div>`;
+      <div class="overflow-x-auto"><table class="min-w-[700px]"><thead><tr><th>Name</th><th>Contact</th><th>Stage</th><th>Source</th><th>Offers</th><th>Last visit</th><th class="text-right">Spend</th><th></th></tr></thead><tbody id="custRows">${custRows()}</tbody></table></div>`, `<div class="flex gap-2"><button class="btn btn-ghost !py-2 text-sm" onclick="scCampaign()"><i class="fa-solid fa-paper-plane"></i>Email</button><button class="btn btn-lime !py-2 text-sm" onclick="exportXLSX()"><i class="fa-solid fa-file-excel"></i>Export Excel</button></div>`)}</div>`;
   },
   picklecam() {
     const clips = DB.sessions.reduce((a, s) => a + s.clips, 0);
@@ -139,7 +139,7 @@ const VIEWS = {
       `<div class="flex gap-2"><button class="btn btn-ghost !py-2 text-sm" onclick="syncPlatform('pull')"><i class="fa-solid fa-cloud-arrow-down"></i>Pull</button><button class="btn btn-lime !py-2 text-sm" onclick="syncPlatform('push')"><i class="fa-solid fa-cloud-arrow-up"></i>Push</button></div>`)}</div>`;
   },
   marketing() {
-    return `<div class="grid gap-5">${panel('Campaigns', `<div class="grid md:grid-cols-2 gap-3">${CAMPAIGNS.map((c, i) => `<div class="card p-4"><p class="font-bold">${c.n}</p><p class="text-xs text-muted mt-1">${c.d}</p><div class="flex justify-between items-center mt-4"><span class="text-xs num">${c.aud()} recipients</span><button class="btn btn-lime !py-1.5 !px-3 text-xs" onclick="sendCampaign(${i})">Send</button></div></div>`).join('')}</div>`)}
+    return `<div class="grid gap-5">${panel('Campaigns', `${OPTIN_NOTE}<div class="grid md:grid-cols-2 gap-3">${CAMPAIGNS.map((c, i) => `<div class="card p-4"><p class="font-bold">${c.n}</p><p class="text-xs text-muted mt-1">${c.d}</p><div class="flex justify-between items-center mt-4"><span class="text-xs num">${c.aud()} recipients</span><button class="btn btn-lime !py-1.5 !px-3 text-xs" onclick="sendCampaign(${i})">Send</button></div></div>`).join('')}</div>`)}
     ${panel('Sent', `<ul class="text-sm space-y-2">${DB.sent.map(s => `<li class="flex justify-between"><span>${s.name}</span><span class="text-muted num">${s.aud} · ${s.when}</span></li>`).join('')}</ul>`)}</div>`;
   },
   settings() { // Configuration: everything on the public page, live
@@ -172,11 +172,12 @@ function resetConfig() {
 }
 const CAMPAIGNS = [
   { n: 'Your highlights expire soon', get d() { return `Grace-period reminder with a one-tap ${peso(PRICES.unlock)} keep-forever link.`; }, aud: () => 4 + DB.customers.filter(c => c.t === 'Lead').length },
-  { n: 'Open play tonight', get d() { return `${hourLabel(HOURS.playFrom)} to ${hourLabel(HOURS.playTo)}, ${peso(PRICES.open)} per block, first come first served.`; }, aud: () => 210 + DB.customers.length },
-  { n: 'Become a member', d: 'Invite leads to a free account and member rates.', aud: () => DB.customers.filter(c => c.t === 'Lead').length },
-  { n: 'Badge unlocked', d: 'Suggested automation (not active in the demo): when a player earns a badge, email their shareable badge card and reward.', aud: () => DB.customers.filter(c => c.t !== 'Lead').length },
+  { n: 'Open play tonight', get d() { return `${hourLabel(HOURS.playFrom)} to ${hourLabel(HOURS.playTo)}, ${peso(PRICES.open)} per block, first come first served.`; }, aud: () => 210 + DB.customers.filter(c => c.mkt).length },
+  { n: 'Become a member', d: 'Invite leads to a free account and member rates.', aud: () => DB.customers.filter(c => c.t === 'Lead' && c.mkt).length },
+  { n: 'Badge unlocked', d: 'Suggested automation (not active in the demo): when a player earns a badge, email their shareable badge card and reward.', aud: () => DB.customers.filter(c => c.t !== 'Lead' && c.mkt).length },
   { n: 'Tournament sponsors wanted', d: 'Call for 2027 Playhouse Pickle Tournament partners.', aud: () => 38 }
 ];
+const OPTIN_NOTE = '<p class="text-xs text-muted mb-4"><i class="fa-solid fa-shield-halved text-lime mr-1"></i>Offers go only to customers who opted in (Data Privacy Act). Expiry reminders are service messages about their own videos.</p>';
 
 // ---------- actions ----------
 function drawer(html) { $('#drawerBody').innerHTML = `<button class="x" style="position:absolute;right:16px;top:12px;background:none;border:0;color:#9A9BA2;font-size:24px;cursor:pointer" onclick="closeDlgs()" aria-label="Close">&times;</button>` + html; openDlg('dlgDrawer'); }
@@ -225,13 +226,14 @@ function scCam() {
     <div><label for="cCt">Court</label><select id="cCt"><option>Court 1</option><option>Court 2</option><option>Court 3</option></select></div>
     <div><label for="cE">Deliver to (email)</label><input id="cE" type="email" placeholder="player@gmail.com"></div>
     <p id="cErr" class="hide text-sm text-red-300">Enter a valid email so the video can be delivered.</p>
+    <label class="ok"><input type="checkbox" id="cMkt"><span>Player also asked for offers by email. Optional: ask, never assume.</span></label>
     <button class="btn btn-lime w-full justify-center" onclick="startCam()"><i class="fa-solid fa-circle-dot"></i>Start recording</button>
     <p class="text-xs text-muted">Demo: the session records, processes, then delivers the full game plus highlights.</p></div>`);
 }
 function startCam() {
   const e = $('#cE').value.trim(); if (!EMAIL.test(e)) return $('#cErr').classList.remove('hide');
   const s = { id: 'PC-' + (1053 + DB.sessions.length), court: $('#cCt').value, who: e, start: new Date().toTimeString().slice(0, 5), mins: 0, clips: 0, st: 'Recording' };
-  DB.sessions.unshift(s); if (!DB.customers.some(x => x.c === e)) DB.customers.unshift({ n: e.split('@')[0], c: e, t: 'Lead', last: 'Today', spend: 0, src: 'Kiosk guest' });
+  DB.sessions.unshift(s); captureLead(e.split('@')[0], e, 'Kiosk guest', $('#cMkt').checked, false);   // staff typed it: no on-screen notice to stamp
   closeDlgs(); SEC = 'picklecam'; renderAdmin(); toast('Recording on ' + s.court);
   setTimeout(() => { s.st = 'Processing'; s.mins = 52; if (SEC === 'picklecam' && S.admin) renderAdmin(); }, 3500);
   setTimeout(() => { s.st = 'Delivered'; s.clips = 13; if (SEC === 'picklecam' && S.admin) renderAdmin(); toast(`#${s.id}: full game + 13 highlights sent to ${e}`); }, 8000);
@@ -243,7 +245,7 @@ function scPayments() {
   drawer(`<h2 class="font-bold text-xl mb-5">Verify payments</h2>${pend.length ? pend.map(([p, i]) => `<div class="card p-4 mb-3 flex justify-between items-center gap-3"><div><p class="font-semibold">${p.what}</p><p class="text-xs text-muted num">${p.method} · ${p.ref} · ${peso(p.amt)}</p></div><button class="btn btn-lime !py-1.5 !px-3 text-xs" onclick="verifyPay(${i});scPayments()">Verify</button></div>`).join('') : '<p class="text-muted">All payments verified.</p>'}`);
 }
 function verifyPay(i) { DB.payments[i].st = 'Verified'; toast('Payment ' + DB.payments[i].ref + ' verified'); renderAdmin(); }
-function scCampaign() { drawer(`<h2 class="font-bold text-xl mb-5">Send a campaign</h2>${CAMPAIGNS.map((c, i) => `<div class="card p-4 mb-3"><p class="font-bold">${c.n}</p><p class="text-xs text-muted mt-1">${c.d}</p><button class="btn btn-lime !py-1.5 !px-3 text-xs mt-3" onclick="sendCampaign(${i})">Send to ${c.aud()}</button></div>`).join('')}`); }
+function scCampaign() { drawer(`<h2 class="font-bold text-xl mb-5">Send a campaign</h2>${OPTIN_NOTE}${CAMPAIGNS.map((c, i) => `<div class="card p-4 mb-3"><p class="font-bold">${c.n}</p><p class="text-xs text-muted mt-1">${c.d}</p><button class="btn btn-lime !py-1.5 !px-3 text-xs mt-3" onclick="sendCampaign(${i})">Send to ${c.aud()}</button></div>`).join('')}`); }
 function sendCampaign(i) { const c = CAMPAIGNS[i]; DB.sent.unshift({ name: c.n, aud: c.aud(), when: 'Just now' }); closeDlgs(); toast(`"${c.n}" queued for ${c.aud()} recipients`); if (S.admin) renderAdmin(); }
 function scRoster() {
   drawer(`<h2 class="font-bold text-xl mb-1">Open play tonight</h2><p class="text-sm text-muted mb-5">${hourLabel(HOURS.playFrom)} to ${hourLabel(HOURS.playTo)} · Court 3 · <span class="num">${DB.roster.length}/16</span> players</p>
@@ -255,7 +257,7 @@ function promote(contact) { const c = DB.customers.find(x => x.c === contact); c
 // ---------- data: Excel soft copy + their platform ----------
 // Sheet name: [DB table, {column header: field}]. Same shape for Excel, import and the platform API.
 const COLS = {
-  Customers: ['customers', { Name: 'n', Contact: 'c', Stage: 't', Source: 'src', 'Last visit': 'last', 'Spend (PHP)': 'spend' }],
+  Customers: ['customers', { Name: 'n', Contact: 'c', Stage: 't', Source: 'src', 'Last visit': 'last', 'Spend (PHP)': 'spend', 'Privacy notice given': 'ok', 'Offers opt-in': 'mkt' }],
   Recordings: ['sessions', { Session: 'id', Court: 'court', 'Delivered to': 'who', Start: 'start', Minutes: 'mins', Highlights: 'clips', Status: 'st' }],
   Payments: ['payments', { Ref: 'ref', For: 'what', Method: 'method', 'Amount (PHP)': 'amt', Status: 'st' }],
   'WiFi vouchers': ['vouchers', { Code: 'code', Plan: 'plan', For: 'who', Status: 'st' }],

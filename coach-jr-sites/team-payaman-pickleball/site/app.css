@@ -116,3 +116,5 @@ td{padding:.65rem .5rem;border-bottom:1px solid var(--line);font-size:14px}
 .task{display:flex;gap:.7rem;align-items:flex-start;padding:.65rem .5rem;border-bottom:1px solid var(--line)}
 .task input{width:18px;height:18px;margin-top:2px;accent-color:#DDE01D;flex:none}
 .task.done .t{color:var(--muted);text-decoration:line-through}
+.ok{display:flex;gap:.6rem;align-items:flex-start;font-size:13px;color:var(--text);margin:0;cursor:pointer}
+.ok input{width:18px;height:18px;padding:0;margin-top:1px;accent-color:#DDE01D;flex:none}

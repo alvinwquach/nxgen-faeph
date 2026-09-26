@@ -68,15 +68,33 @@ function go(screen, anchor) {
 }
 
 // ---------- accounts (simulated) ----------
-function captureLead(name, contact, source) { if (typeof DB !== 'undefined') DB.customers.unshift({ n: name, c: contact, t: 'Lead', last: 'Today', spend: 0, src: source }); }
+// RA 10173: records carry when the privacy notice was shown on screen (ok) and, separately, when offers were opted into (mkt).
+const stamp = () => new Date().toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' });
+function captureLead(n, c, src, mkt, shown = true) {
+  if (typeof DB === 'undefined') return;
+  let r = DB.customers.find(x => x.c === c);
+  if (!r) DB.customers.unshift(r = { n, c, t: 'Lead', last: 'Today', spend: 0, src });
+  if (shown) r.ok = stamp();
+  if (mkt) r.mkt = stamp();   // leaving the optional box empty never withdraws an earlier opt-in
+  return r;
+}
+function setOffers(on) { // withdrawing is as easy as opting in
+  S.user.mkt = on; const r = typeof DB !== 'undefined' && DB.customers.find(x => x.c === S.user.email);
+  if (r) r.mkt = on ? stamp() : '';
+  toast(on ? 'Offers on' : 'Offers off. Your match links still arrive');
+}
 function login(method) {
+  if (!$('#aOk').checked) return $('#aOkErr').classList.remove('hide');
+  $('#aOkErr').classList.add('hide');
   let name = 'Marco Rivera', email = 'marco.rivera@gmail.com';
   if (method === 'email') {
     email = $('#aEmail').value.trim(); name = $('#aName').value.trim() || email.split('@')[0];
     if (!EMAIL.test(email)) return $('#aErr').classList.remove('hide');
-    $('#aErr').classList.add('hide'); captureLead(name, email, 'Sign-up');
+    $('#aErr').classList.add('hide');
   }
-  S.user = { name, email };
+  const r = captureLead(name, email, 'Sign-up', $('#aMkt').checked);
+  S.user = { name, email, mkt: !!(r ? r.mkt : $('#aMkt').checked) };
+  const sw = $('#mkt'); if ((sw.getAttribute('aria-checked') === 'true') !== S.user.mkt) toggleSwitch(sw);
   $('#pName').textContent = name; $('#pEmail').textContent = email; $('#fName').value = name;
   $('#loginBtn').classList.add('hide'); $('#portalBtn').classList.remove('hide');
   closeDlgs(); toast('Welcome, ' + name.split(' ')[0]); go('portal');
@@ -85,7 +103,7 @@ function logout() { S.user = null; $('#loginBtn').classList.remove('hide'); $('#
 function guestSend() {
   const e = $('#gEmail').value.trim();
   if (!EMAIL.test(e)) return $('#gErr').classList.remove('hide');
-  $('#gErr').classList.add('hide'); captureLead(e.split('@')[0], e, 'Kiosk guest'); closeDlgs(); toast('Links sent to ' + e);
+  $('#gErr').classList.add('hide'); captureLead(e.split('@')[0], e, 'Kiosk guest', $('#gMkt').checked); closeDlgs(); toast('Links sent to ' + e);
 }
 
 // ---------- booking widget ----------
@@ -112,7 +130,7 @@ function toggleHour(h) { const hs = S.sel.hours, i = hs.indexOf(h); if (i < 0) h
 function startBooking() {
   const hs = S.sel.hours; if (!hs.length) return;
   S.pay = { kind: 'book', amt: hs.length * PRICES.court, day: S.sel.day, court: S.sel.court, hours: [...hs], label: `Court ${S.sel.court + 1} · ${S.sel.dayLabel}, ${hourRanges(hs)}` };
-  $('#payTitle').textContent = 'Confirm booking'; $('#payDesc').textContent = `${S.pay.label}. ${hs.length} hour${hs.length > 1 ? 's' : ''} at ${peso(PRICES.court)} per hour, each recorded by Your Brand.`;
+  $('#payTitle').textContent = 'Confirm booking'; $('#payDesc').textContent = `${S.pay.label}. ${hs.length} hour${hs.length > 1 ? 's' : ''} at ${peso(PRICES.court)} per hour. Tap start on the courtside tablet to record; everyone on your court will be in the video.`;
   $('#payAmt').textContent = peso(S.pay.amt); openDlg('dlgPay');
 }
 
